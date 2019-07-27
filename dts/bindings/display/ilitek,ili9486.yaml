@@ -1,0 +1,25 @@
+#
+# Copyright (c) 2019, Harry Jiang
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+title: ILI9486 480x320 Display Controller
+
+description: >
+    This is a representation of the ILI9486 480x320 Display Controller
+
+inherits:
+    !include spi-device.yaml
+
+properties:
+    compatible:
+      constraint: "ilitek,ili9486"
+
+    reset-gpios:
+      type: compound
+      category: required
+
+    cmd-data-gpios:
+      type: compound
+      category: required
