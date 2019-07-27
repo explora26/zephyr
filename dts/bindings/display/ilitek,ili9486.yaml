@@ -1,0 +1,26 @@
+#
+# Copyright (c) 2019, Harry Jiang
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+description: ILI9486 480x320 Display Controller
+
+compatible: "ilitek,ili9486"
+
+include: spi-device.yaml
+
+properties:
+    reset-gpios:
+      type: phandle-array
+      required: false
+      description: RESET pin.
+
+        The RESET pin of ILI9340 is active low.
+        If connected directly the MCU pin should be configured
+        as active low.
+
+    cmd-data-gpios:
+      type: phandle-array
+      required: true
+      description: D/CX pin.
