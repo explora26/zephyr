@@ -98,6 +98,8 @@ The Zephyr stm32f4_disco board configuration supports the following hardware fea
 +-----------+------------+-------------------------------------+
 | CAN       | on-chip    | CAN controller                      |
 +-----------+------------+-------------------------------------+
+| SPI       | on-chip    | spi                                 |
++-----------+------------+-------------------------------------+
 
 .. note:: CAN feature requires CAN transceiver, such as `SK Pang CAN breakout board`_.
           Zephyr default configuration uses CAN_2 exclusively, as simultaneous use
