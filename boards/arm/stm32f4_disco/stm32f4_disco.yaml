@@ -13,3 +13,4 @@ supported:
   - rtc
   - counter
   - usb
+  - spi
