@@ -14,3 +14,4 @@ supported:
   - counter
   - usb
   - spi
+  - i2c
