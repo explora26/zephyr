@@ -13,3 +13,5 @@ supported:
   - rtc
   - counter
   - usb
+  - spi
+  - i2c

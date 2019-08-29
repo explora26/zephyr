@@ -9,6 +9,7 @@ zephyr_sources_ifdef(CONFIG_DUMMY_DISPLAY	display_dummy.c)
 zephyr_sources_ifdef(CONFIG_FRAMEBUF_DISPLAY	display_framebuf.c)
 zephyr_sources_ifdef(CONFIG_ILI9340		display_ili9340.c)
 zephyr_sources_ifdef(CONFIG_ST7789V		display_st7789v.c)
+zephyr_sources_ifdef(CONFIG_ILI9486		display_ili9486.c)
 
 zephyr_sources_ifdef(CONFIG_MICROBIT_DISPLAY
 	mb_display.c
@@ -24,4 +25,11 @@ zephyr_sources_ifdef(CONFIG_ILI9340_LCD_SEEED_TFTV2
 
 zephyr_sources_ifdef(CONFIG_ST7789V_LCD_TL019FQV01
 	display_st7789v_tl019fqv01.c
+)
+zephyr_sources_ifdef(CONFIG_ILI9486_LCD_WAVESHARE_35B_V2
+	display_ili9486_waveshare_35b_v2.c
+)
+
+zephyr_sources_ifdef(CONFIG_ILI9486_LCD_WAVESHARE_40C
+	display_ili9486_waveshare_40c.c
 )

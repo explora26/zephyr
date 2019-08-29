@@ -1,0 +1,44 @@
+# Kconfig - ILI9486 display driver configuration options
+
+#
+# Copyright (c) 2019 Harry Jiang
+#
+# SPDX-License-Identifier: Apache-2.0
+#
+
+menuconfig ILI9486
+	bool "ILI9486 display driver"
+	depends on SPI
+	help
+	Enable driver for ILI9486 display driver.
+
+if ILI9486
+
+choice
+	prompt "LCD"
+	default ILI9486_LCD_WAVESHARE_40C
+	help
+	Specify the type of LCD connected to the ILI9486 display controller.
+
+config ILI9486_LCD_WAVESHARE_35B_V2
+	bool "Waveshare 3.5\" TFT Rev.B v2.0"
+
+config ILI9486_LCD_WAVESHARE_40C
+	bool "Waveshare 4\" TFT Rev.C"
+
+endchoice
+
+choice
+	prompt "Color pixel format"
+	help
+	Specify the color pixel format of the ILI9486 display controller.
+
+config ILI9486_RGB888
+	bool "RGB888"
+
+config ILI9486_RGB565
+	bool "RGB565"
+
+endchoice
+
+endif #ILI9486
