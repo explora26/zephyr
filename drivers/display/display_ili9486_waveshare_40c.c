@@ -4,7 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <display.h>
 #include "display_ili9486.h"
 
 void ili9486_lcd_init(struct ili9486_data *p_ili9486)
@@ -16,7 +15,7 @@ void ili9486_lcd_init(struct ili9486_data *p_ili9486)
 	cmd = ILI9340_CMD_SOFTWARE_RESET;
 	ili9486_transmit(p_ili9486, cmd, NULL, 0);
 
-	k_sleep(5);
+	k_msleep(5);
 
 	cmd = 0xf0;
 	data[0] = 0xC3;
@@ -155,7 +154,7 @@ void ili9486_lcd_init(struct ili9486_data *p_ili9486)
 	cmd = ILI9340_CMD_EXIT_SLEEP;
 	ili9486_transmit(p_ili9486, cmd, NULL, 0);
 
-	k_sleep(120);
+	k_msleep(120);
 
 	/* Display ON */
 	cmd = ILI9340_CMD_DISPLAY_ON;

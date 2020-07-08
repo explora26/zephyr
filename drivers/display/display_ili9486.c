@@ -18,13 +18,13 @@ LOG_MODULE_REGISTER(display_ili9486);
 #include <string.h>
 
 struct ili9486_data {
-#ifdef DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_CONTROLLER
+#if DT_INST_NODE_HAS_PROP(0, reset_gpios)
 	struct device *reset_gpio;
 #endif
 	struct device *command_data_gpio;
 	struct device *spi_dev;
 	struct spi_config spi_config;
-#ifdef DT_INST_0_ILITEK_ILI9486_CS_GPIOS_CONTROLLER
+#if DT_INST_SPI_DEV_HAS_CS_GPIOS(0)
 	struct spi_cs_control cs_ctrl;
 #endif
 };
@@ -42,7 +42,7 @@ struct ili9486_data {
 static void ili9486_exit_sleep(struct ili9486_data *data)
 {
 	ili9486_transmit(data, ILI9340_CMD_EXIT_SLEEP, NULL, 0);
-	k_sleep(120);
+	k_msleep(120);
 }
 
 static int ili9486_init(struct device *dev)
@@ -51,56 +51,59 @@ static int ili9486_init(struct device *dev)
 
 	LOG_DBG("Initializing display driver");
 
-	data->spi_dev = device_get_binding(DT_INST_0_ILITEK_ILI9486_BUS_NAME);
+	data->spi_dev = device_get_binding(DT_INST_BUS_LABEL(0));
 	if (data->spi_dev == NULL) {
 		LOG_ERR("Could not get SPI device for ILI9486");
 		return -EPERM;
 	}
 
-	data->spi_config.frequency = DT_INST_0_ILITEK_ILI9486_SPI_MAX_FREQUENCY;
+	data->spi_config.frequency = DT_INST_PROP(0, spi_max_frequency);
 	data->spi_config.operation = SPI_OP_MODE_MASTER | SPI_WORD_SET(8);
-	data->spi_config.slave = DT_INST_0_ILITEK_ILI9486_BASE_ADDRESS;
+	data->spi_config.slave = DT_INST_REG_ADDR(0);
 
-#ifdef DT_INST_0_ILITEK_ILI9486_CS_GPIOS_CONTROLLER
+#if DT_INST_SPI_DEV_HAS_CS_GPIOS(0)
 	data->cs_ctrl.gpio_dev =
-		device_get_binding(DT_INST_0_ILITEK_ILI9486_CS_GPIOS_CONTROLLER);
-	data->cs_ctrl.gpio_pin = DT_INST_0_ILITEK_ILI9486_CS_GPIOS_PIN;
+		device_get_binding(DT_INST_SPI_DEV_CS_GPIOS_LABEL(0));
+	data->cs_ctrl.gpio_pin = DT_INST_SPI_DEV_CS_GPIOS_PIN(0);
 	data->cs_ctrl.delay = 0U;
 	data->spi_config.cs = &(data->cs_ctrl);
 #else
 	data->spi_config.cs = NULL;
 #endif
 
-#ifdef DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_CONTROLLER
+#if DT_INST_NODE_HAS_PROP(0, reset_gpios)
 	data->reset_gpio =
-		device_get_binding(DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_CONTROLLER);
+		device_get_binding(DT_INST_GPIO_LABEL(0, reset_gpios));
 	if (data->reset_gpio == NULL) {
 		LOG_ERR("Could not get GPIO port for ILI9486 reset");
 		return -EPERM;
 	}
 
-	gpio_pin_configure(data->reset_gpio, DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_PIN,
+	gpio_pin_configure(data->reset_gpio, DT_INST_GPIO_PIN(0, reset_gpios),
 			   GPIO_DIR_OUT);
 #endif
 
 	data->command_data_gpio =
-		device_get_binding(DT_INST_0_ILITEK_ILI9486_CMD_DATA_GPIOS_CONTROLLER);
+		device_get_binding(DT_INST_GPIO_LABEL(0, cmd_data_gpios));
 	if (data->command_data_gpio == NULL) {
 		LOG_ERR("Could not get GPIO port for ILI9486 command/data");
 		return -EPERM;
 	}
 
-	gpio_pin_configure(data->command_data_gpio, DT_INST_0_ILITEK_ILI9486_CMD_DATA_GPIOS_PIN,
+	gpio_pin_configure(data->command_data_gpio, DT_INST_GPIO_PIN(0, cmd_data_gpios),
 			   GPIO_DIR_OUT);
 
-#ifdef DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_CONTROLLER
+#if DT_INST_NODE_HAS_PROP(0, reset_gpios)
 	LOG_DBG("Resetting display driver");
-	gpio_pin_write(data->reset_gpio, DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_PIN, 1);
-	k_sleep(1);
-	gpio_pin_write(data->reset_gpio, DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_PIN, 0);
-	k_sleep(1);
-	gpio_pin_write(data->reset_gpio, DT_INST_0_ILITEK_ILI9486_RESET_GPIOS_PIN, 1);
-	k_sleep(5);
+	gpio_pin_set(data->reset_gpio,
+		     DT_INST_GPIO_PIN(0, reset_gpios), 1);
+	k_msleep(1);
+	gpio_pin_set(data->reset_gpio,
+		     DT_INST_GPIO_PIN(0, reset_gpios), 0);
+	k_msleep(1);
+	gpio_pin_set(data->reset_gpio,
+		     DT_INST_GPIO_PIN(0, reset_gpios), 0);
+	k_msleep(5);
 #endif
 
 	LOG_DBG("Initializing LCD");
@@ -166,7 +169,7 @@ static int ili9486_write(const struct device *dev, const u16_t x,
 
 	tx_buf.buf = (void *)write_data_start;
 	tx_buf.len = desc->width * ILI9486_RGB_SIZE * write_h;
-	gpio_pin_write(data->command_data_gpio, DT_INST_0_ILITEK_ILI9486_CMD_DATA_GPIOS_PIN,
+	gpio_pin_set(data->command_data_gpio, DT_INST_0_ILITEK_ILI9486_CMD_DATA_GPIOS_PIN,
 		       ILI9486_CMD_DATA_PIN_DATA);
 	data->spi_config.operation = SPI_OP_MODE_MASTER | SPI_WORD_SET(8) | SPI_TRANSFER_MSB;
 	spi_write(data->spi_dev, &data->spi_config, &tx_bufs);
@@ -281,16 +284,17 @@ void ili9486_transmit(struct ili9486_data *data, u8_t cmd, void *tx_data,
 	struct spi_config spi_config = data->spi_config;
 
 	spi_config.operation = SPI_OP_MODE_MASTER | SPI_WORD_SET(16) | SPI_TRANSFER_MSB;
-	gpio_pin_write(data->command_data_gpio, DT_INST_0_ILITEK_ILI9486_CMD_DATA_GPIOS_PIN,
-		       ILI9486_CMD_DATA_PIN_COMMAND);
+	gpio_pin_set(data->command_data_gpio,
+		     DT_INST_GPIO_PIN(0, cmd_data_gpios),
+		     ILI9486_CMD_DATA_PIN_COMMAND);
 	spi_write(data->spi_dev, &spi_config, &tx_bufs);
 
 	if (tx_data != NULL) {
 		tx_buf.buf = tx_data;
 		tx_buf.len = tx_len;
-		gpio_pin_write(data->command_data_gpio,
-			       DT_INST_0_ILITEK_ILI9486_CMD_DATA_GPIOS_PIN,
-			       ILI9486_CMD_DATA_PIN_DATA);
+		gpio_pin_set(data->command_data_gpio,
+			     DT_INST_GPIO_PIN(0, cmd_data_gpios),
+			     ILI9486_CMD_DATA_PIN_DATA);
 		spi_write(data->spi_dev, &spi_config, &tx_bufs);
 	}
 }
@@ -310,6 +314,6 @@ static const struct display_driver_api ili9486_api = {
 
 static struct ili9486_data ili9486_data;
 
-DEVICE_AND_API_INIT(ili9486, DT_INST_0_ILITEK_ILI9486_LABEL, &ili9486_init,
+DEVICE_AND_API_INIT(ili9486, DT_INST_LABEL(0), &ili9486_init,
 		    &ili9486_data, NULL, APPLICATION,
 		    CONFIG_APPLICATION_INIT_PRIORITY, &ili9486_api);
