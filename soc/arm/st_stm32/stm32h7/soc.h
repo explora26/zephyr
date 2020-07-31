@@ -68,6 +68,10 @@
 #include <stm32h7xx_ll_i2c.h>
 #endif /* CONFIG_I2C_STM32 */
 
+#if defined(CONFIG_SPI_STM32) || defined(CONFIG_I2S_STM32)
+#include <stm32h7xx_ll_spi.h>
+#endif
+
 #ifdef CONFIG_ADC_STM32
 #include <stm32h7xx_ll_adc.h>
 #endif /* CONFIG_ADC_STM32 */
