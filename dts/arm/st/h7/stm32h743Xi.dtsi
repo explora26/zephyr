@@ -16,5 +16,27 @@
 				reg = <0x08000000 DT_SIZE_K(2048)>;
 			};
 		};
+
+		spi4: spi@40013400 {
+			compatible = "st,stm32-spi-fifo", "st,stm32-spi";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x4001340 0x400>;
+			clocks = <&rcc STM32_CLOCK_BUS_APB2 0x00002000>;
+			interrupts = <81 0>;
+			status = "disabled";
+			label = "SPI_4";
+		};
+
+		spi5: spi@40015000 {
+			compatible = "st,stm32-spi-fifo", "st,stm32-spi";
+			#address-cells = <1>;
+			#size-cells = <0>;
+			reg = <0x40015000 0x400>;
+			clocks = <&rcc STM32_CLOCK_BUS_APB2 0x00100000>;
+			interrupts = <85 0>;
+			status = "disabled";
+			label = "SPI_5";
+		};
 	};
 };
