@@ -28,6 +28,11 @@ static const struct pin_config pinconf[] = {
 #if DT_NODE_HAS_STATUS(DT_NODELABEL(adc1_2), okay) && CONFIG_ADC
 	{ STM32_PIN_PA3, STM32H7_PINMUX_FUNC_PA3_ADC12_INP15 },
 #endif
+#if DT_NODE_HAS_STATUS(DT_NODELABEL(spi1), okay) && CONFIG_SPI
+	{STM32_PIN_PA5, STM32H7_PINMUX_FUNC_PA5_SPI1_SCK},
+	{STM32_PIN_PA6, STM32H7_PINMUX_FUNC_PA6_SPI1_MISO},
+	{STM32_PIN_PB5, STM32H7_PINMUX_FUNC_PB5_SPI1_MOSI},
+#endif
 };
 
 static int pinmux_stm32_init(struct device *port)
