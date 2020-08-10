@@ -27,6 +27,7 @@ if(CONFIG_SOC_FLASH_STM32)
   zephyr_sources_ifdef(CONFIG_SOC_SERIES_STM32WBX flash_stm32wbx.c)
   zephyr_sources_ifdef(CONFIG_SOC_SERIES_STM32G0X flash_stm32g0x.c)
   zephyr_sources_ifdef(CONFIG_SOC_SERIES_STM32G4X flash_stm32g4x.c)
+  zephyr_sources_ifdef(CONFIG_SOC_SERIES_STM32H7X flash_stm32h7x.c)
 endif()
 
 zephyr_include_directories_ifdef(
