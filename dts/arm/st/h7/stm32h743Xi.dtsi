@@ -14,6 +14,7 @@
 				compatible = "soc-nv-flash";
 				label = "FLASH_STM32";
 				reg = <0x08000000 DT_SIZE_K(2048)>;
+				write-block-size = <32>;
 			};
 		};
 	};

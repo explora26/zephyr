@@ -13,7 +13,8 @@
 	defined(CONFIG_SOC_SERIES_STM32F1X) || \
 	defined(CONFIG_SOC_SERIES_STM32F3X) || \
 	defined(CONFIG_SOC_SERIES_STM32G0X) || \
-	defined(CONFIG_SOC_SERIES_STM32G4X)
+	defined(CONFIG_SOC_SERIES_STM32G4X) || \
+	defined(CONFIG_SOC_SERIES_STM32H7X)
 #include <drivers/clock_control.h>
 #include <drivers/clock_control/stm32_clock_control.h>
 #endif
@@ -68,9 +69,9 @@ int flash_stm32_block_erase_loop(const struct device *dev,
 
 int flash_stm32_wait_flash_idle(const struct device *dev);
 
-#ifdef CONFIG_SOC_SERIES_STM32WBX
+#if defined(CONFIG_SOC_SERIES_STM32WBX) || defined(CONFIG_SOC_SERIES_STM32H7X)
 int flash_stm32_check_status(const struct device *dev);
-#endif /* CONFIG_SOC_SERIES_STM32WBX */
+#endif /* CONFIG_SOC_SERIES_STM32WBX || CONFIG_SOC_SERIES_STM32H7X */
 
 #ifdef CONFIG_FLASH_PAGE_LAYOUT
 void flash_stm32_page_layout(const struct device *dev,

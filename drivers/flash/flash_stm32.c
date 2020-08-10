@@ -37,6 +37,9 @@ LOG_MODULE_REGISTER(flash_stm32, CONFIG_FLASH_LOG_LEVEL);
 /* STM32F7: maximum erase time of 4s for a 256K sector */
 #elif defined(CONFIG_SOC_SERIES_STM32F7X)
 #define STM32_FLASH_MAX_ERASE_TIME	4000
+/* STM32H7: maximum erase time of 4s for a 128K sector */
+#elif defined(CONFIG_SOC_SERIES_STM32H7X)
+#define STM32_FLASH_MAX_ERASE_TIME	4000
 /* STM32L0: maximum erase time of 3.2ms for a 128B page */
 #elif defined(CONFIG_SOC_SERIES_STM32L0X)
 #define STM32_FLASH_MAX_ERASE_TIME	4
@@ -97,7 +100,8 @@ static inline void _flash_stm32_sem_give(const struct device *dev)
 #define flash_stm32_sem_give(dev)
 #endif
 
-#if !defined(CONFIG_SOC_SERIES_STM32WBX)
+#if !defined(CONFIG_SOC_SERIES_STM32WBX) && \
+	!defined(CONFIG_SOC_SERIES_STM32H7X)
 static int flash_stm32_check_status(const struct device *dev)
 {
 	uint32_t const error =
@@ -141,6 +145,9 @@ int flash_stm32_wait_flash_idle(const struct device *dev)
 	}
 #if defined(CONFIG_SOC_SERIES_STM32G0X)
 	while ((FLASH_STM32_REGS(dev)->SR & FLASH_SR_BSY1)) {
+#elif defined(CONFIG_SOC_SERIES_STM32H7X)
+	while ((FLASH_STM32_REGS(dev)->SR1 & FLASH_SR_BSY)) {
+#endif
 #else
 	while ((FLASH_STM32_REGS(dev)->SR & FLASH_SR_BSY)) {
 #endif
@@ -176,7 +183,7 @@ static void flash_stm32_flush_caches(const struct device *dev,
 		regs->ACR &= ~FLASH_ACR_DCRST;
 		regs->ACR |= FLASH_ACR_DCEN;
 	}
-#elif defined(CONFIG_SOC_SERIES_STM32F7X)
+#elif defined(CONFIG_SOC_SERIES_STM32F7X) || defined(CONFIG_SOC_SERIES_STM32H7X)
 	SCB_InvalidateDCache_by_Addr((uint32_t *)(CONFIG_FLASH_BASE_ADDRESS
 						  + offset), len);
 #endif
@@ -274,6 +281,16 @@ static int flash_stm32_write_protection(const struct device *dev, bool enable)
 	}
 
 #if defined(FLASH_CR_LOCK)
+#if defined(CONFIG_SOC_SERIES_STM32H7X)
+	if (enable) {
+		regs->CR1 |= FLASH_CR_LOCK;
+	} else {
+		if (regs->CR1 & FLASH_CR_LOCK) {
+			regs->KEYR1 = FLASH_KEY1;
+			regs->KEYR1 = FLASH_KEY2;
+		}
+	}
+#else
 	if (enable) {
 		regs->CR |= FLASH_CR_LOCK;
 	} else {
@@ -282,6 +299,7 @@ static int flash_stm32_write_protection(const struct device *dev, bool enable)
 			regs->KEYR = FLASH_KEY2;
 		}
 	}
+#endif /* CONFIG_SOC_SERIES_STM32H7X */
 #else
 	if (enable) {
 		regs->PECR |= FLASH_PECR_PRGLOCK;
