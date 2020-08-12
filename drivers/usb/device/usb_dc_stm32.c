@@ -287,6 +287,8 @@ static int usb_dc_stm32_clock_enable(void)
 #endif /* CONFIG_CLOCK_STM32_MSI_PLL_MODE && !CONFIG_CLOCK_STM32_SYSCLK_SRC_MSI */
 #endif /* RCC_HSI48_SUPPORT / LL_RCC_USB_CLKSOURCE_NONE */
 
+	LL_RCC_SetUSBClockSource(LL_RCC_USB_CLKSOURCE_PLL3Q);
+
 	if (clock_control_on(clk, (clock_control_subsys_t *)&pclken) != 0) {
 		LOG_ERR("Unable to enable USB clock");
 		return -EIO;

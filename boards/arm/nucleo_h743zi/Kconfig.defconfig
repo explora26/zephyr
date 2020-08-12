@@ -8,4 +8,24 @@ if BOARD_NUCLEO_H743ZI
 config BOARD
 	default "nucleo_h743zi"
 
+config CLOCK_STM32_D1CPRE
+	default 1
+
+config CLOCK_STM32_HPRE
+	# HCLK: 200MHz
+	default 2
+
+config CLOCK_STM32_D2PPRE1
+	# APBX: 100MHz
+	default 2
+
+config CLOCK_STM32_D2PPRE2
+	default 2
+
+config CLOCK_STM32_D1PPRE
+	default 2
+
+config CLOCK_STM32_D3PPRE
+	default 2
+
 endif # BOARD_NUCLEO_H743ZI

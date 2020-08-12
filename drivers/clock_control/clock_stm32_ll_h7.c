@@ -253,8 +253,26 @@ static int stm32_clock_control_init(struct device *dev)
 	LL_RCC_PLL1_SetQ(CONFIG_CLOCK_STM32_PLL_Q_DIVISOR);
 	LL_RCC_PLL1_SetR(CONFIG_CLOCK_STM32_PLL_R_DIVISOR);
 
+
 	LL_RCC_PLL1_Enable();
 	while (LL_RCC_PLL1_IsReady() != 1) {
+	}
+
+	/* Configure PLL1 */
+	LL_RCC_PLL3P_Enable();
+	LL_RCC_PLL3Q_Enable();
+	LL_RCC_PLL3R_Enable();
+	LL_RCC_PLL3FRACN_Disable();
+	LL_RCC_PLL3_SetVCOInputRange(LL_RCC_PLLINPUTRANGE_2_4);
+	LL_RCC_PLL3_SetVCOOutputRange(LL_RCC_PLLVCORANGE_WIDE);
+	LL_RCC_PLL3_SetM(25);
+	LL_RCC_PLL3_SetN(336);
+	LL_RCC_PLL3_SetP(2);
+	LL_RCC_PLL3_SetQ(7);
+	LL_RCC_PLL3_SetR(2);
+
+	LL_RCC_PLL3_Enable();
+	while (LL_RCC_PLL3_IsReady() != 1) {
 	}
 
 	/* Set buses (Sys,AHB, APB1, APB2 & APB4) prescalers */

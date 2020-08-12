@@ -84,4 +84,31 @@
 
 &spi1 {
 	status = "okay";
+	cs-gpios = <&gpiod 6 GPIO_ACTIVE_LOW>;
+	/* WINBOND */
+	w25q32jvssiq: w25q32jvssiq@0 {
+		compatible = "winbond,w25q32jvssiq", "jedec,spi-nor";
+		size = <67108864>;
+		label = "W25Q64JVSSIQ";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		status = "okay";
+		jedec-id = [ef 40 17];
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			storage_partition: partition@0 {
+				label = "storage";
+				reg = <0x00000000 0x00008000>;
+			};
+		};
+	};
+
+};
+
+&usbotg_fs {
+	status = "okay";
 };
