@@ -1,0 +1,101 @@
+/*
+ * Copyright (c) 2020 Teslabs Engineering S.L.
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <st/h7/stm32h743Xi.dtsi>
+
+/ {
+	model = "WeAct Studio MINISTM32H743 board";
+	compatible = "weact,ministm32h743", "st,stm32h743";
+
+	chosen {
+		zephyr,console = &usart3;
+		zephyr,shell-uart = &usart3;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,dtcm = &dtcm;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		green_led: led_0 {
+			gpios = <&gpiob 0 GPIO_ACTIVE_HIGH>;
+			label = "User LD1";
+		};
+		blue_led: led_1 {
+			gpios = <&gpiob 7 GPIO_ACTIVE_HIGH>;
+			label = "User LD2";
+		};
+	};
+
+	pwmleds {
+		compatible = "pwm-leds";
+
+		red_pwm_led: red_pwm_led {
+			pwms = <&pwm12 1 4 PWM_POLARITY_NORMAL>;
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button: button_0 {
+			label = "User";
+			gpios = <&gpioc 13 GPIO_ACTIVE_HIGH>;
+		};
+	};
+
+	aliases {
+		led0 = &green_led;
+		led1 = &blue_led;
+		pwm-led0 = &red_pwm_led;
+		sw0 = &user_button;
+	};
+};
+
+&usart3 {
+	current-speed = <115200>;
+	status = "okay";
+};
+
+&rtc {
+	status = "okay";
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_FAST>;
+};
+
+&spi1 {
+	status = "okay";
+	cs-gpios = <&gpiod 6 GPIO_ACTIVE_LOW>;
+	/* WINBOND */
+	w25q32jvssiq: w25q32jvssiq@0 {
+		compatible = "winbond,w25q32jvssiq", "jedec,spi-nor";
+		size = <67108864>;
+		label = "W25Q64JVSSIQ";
+		reg = <0>;
+		spi-max-frequency = <10000000>;
+		status = "okay";
+		jedec-id = [ef 40 17];
+
+		partitions {
+			compatible = "fixed-partitions";
+			#address-cells = <1>;
+			#size-cells = <1>;
+
+			storage_partition: partition@0 {
+				label = "storage";
+				reg = <0x00000000 0x00008000>;
+			};
+		};
+	};
+
+};
+
+&usbotg_fs {
+	status = "okay";
+};

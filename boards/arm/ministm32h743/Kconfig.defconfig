@@ -1,0 +1,31 @@
+# STM32H743ZI Nucleo board configuration
+
+# Copyright (c) 2020 Teslabs Engineering S.L.
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_MINISTM32H743
+
+config BOARD
+	default "ministm32h743"
+
+config CLOCK_STM32_D1CPRE
+	default 1
+
+config CLOCK_STM32_HPRE
+	# HCLK: 200MHz
+	default 2
+
+config CLOCK_STM32_D2PPRE1
+	# APBX: 100MHz
+	default 2
+
+config CLOCK_STM32_D2PPRE2
+	default 2
+
+config CLOCK_STM32_D1PPRE
+	default 2
+
+config CLOCK_STM32_D3PPRE
+	default 2
+
+endif # BOARD_MINISTM32H743
