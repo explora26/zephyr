@@ -147,7 +147,6 @@ int flash_stm32_wait_flash_idle(const struct device *dev)
 	while ((FLASH_STM32_REGS(dev)->SR & FLASH_SR_BSY1)) {
 #elif defined(CONFIG_SOC_SERIES_STM32H7X)
 	while ((FLASH_STM32_REGS(dev)->SR1 & FLASH_SR_BSY)) {
-#endif
 #else
 	while ((FLASH_STM32_REGS(dev)->SR & FLASH_SR_BSY)) {
 #endif

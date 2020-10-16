@@ -90,3 +90,36 @@
 &rng {
 	status = "okay";
 };
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		/*
+		 * The sectors 0 (128 kbytes) are reserved for
+		 * the bootloader.
+		 */
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x0 0x00020000>;
+			read-only;
+		};
+
+		slot0_partition: partition@40000 {
+			label = "image-0";
+			reg = <0x00040000 0x00040000>;
+		};
+
+		slot1_partition: partition@80000 {
+			label = "image-1";
+			reg = <0x00800000 0x00040000>;
+		};
+
+		scratch_partition: partition@c0000 {
+			label = "image-scratch";
+			reg = <0x000C0000 0x00040000>;
+		};
+	};
+};
