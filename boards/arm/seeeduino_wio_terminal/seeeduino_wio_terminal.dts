@@ -1,0 +1,117 @@
+/*
+ * Copyright (c) 2021 Harry Jiang
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include <atmel/samd5xx19.dtsi>
+
+/ {
+	model = "Seeeduino Wio Terminal";
+	compatible = "seeedstudio,seeeduino-wio-terminal";
+
+	chosen {
+		zephyr,console = &sercom2;
+		zephyr,shell-uart = &sercom2;
+		zephyr,sram = &sram0;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &code_partition;
+	};
+
+	leds {
+		compatible = "gpio-leds";
+		led0: led_0 {
+			gpios = <&porta 15 GPIO_ACTIVE_HIGH>;
+			label = "Blue LED";
+		};
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+		user_button1: button_1 {
+			label = "User Button 1";
+			gpios = <&portc 26 GPIO_ACTIVE_LOW>;
+		};
+		user_button2: button_2 {
+			label = "User Button 2";
+			gpios = <&portc 27 GPIO_ACTIVE_LOW>;
+		};
+		user_button3: button_3 {
+			label = "User Button 3";
+			gpios = <&portc 28 GPIO_ACTIVE_LOW>;
+		};
+		joy_sel: joystick_select {
+			label = "joystick select";
+			gpios = <&portd 10 GPIO_ACTIVE_LOW>;
+		};
+		joy_up: joystick_up {
+			label = "joystick up";
+			gpios = <&portd 20 GPIO_ACTIVE_LOW>;
+		};
+		joy_down: joystick_down {
+			label = "joystick down";
+			gpios = <&portd 8 GPIO_ACTIVE_LOW>;
+		};
+		joy_left: joystick_left {
+			label = "joystick left";
+			gpios = <&portd 12 GPIO_ACTIVE_LOW>;
+		};
+		joy_right: joystick_right {
+			label = "joystick right";
+			gpios = <&portd 9 GPIO_ACTIVE_LOW>;
+		};
+	};
+
+	aliases {
+		led0 = &led0;
+		sw0 = &user_button1;
+		sw1 = &user_button2;
+		sw2 = &user_button3;
+	};
+};
+
+&cpu0 {
+	clock-frequency = <120000000>;
+};
+
+&sercom2 {
+	status = "okay";
+	compatible = "atmel,sam0-uart";
+	current-speed = <115200>;
+	txpo = <0>;
+	rxpo = <1>;
+};
+
+&usb0 {
+	status = "okay";
+};
+
+&dmac {
+	status = "okay";
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "uf2";
+			reg = <0x00000000 DT_SIZE_K(16)>;
+			read-only;
+		};
+
+		code_partition: partition@4000 {
+			label = "code";
+			reg = <0x4000 DT_SIZE_K(512-16-16)>;
+			read-only;
+		};
+
+		storage_partition: partition@7c000 {
+			label = "storage";
+			reg = <0x7c000 DT_SIZE_K(16)>;
+		};
+	};
+};

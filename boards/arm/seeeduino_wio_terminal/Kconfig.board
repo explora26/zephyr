@@ -1,0 +1,8 @@
+# Seeeduino Wio Terminal configuration
+
+# Copyright (c) 2021 Harry Jiang
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_SEEEDUINO_WIO_TERMINAL
+	bool "Seeeduino Wio Terminal"
+	depends on SOC_PART_NUMBER_SAMD51P19A

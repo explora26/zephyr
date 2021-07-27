@@ -1,0 +1,20 @@
+identifier: seeeduino-wio-terminal
+name: Seeeduino Wio Terminal
+type: mcu
+arch: arm
+ram: 192
+flash: 512
+toolchain:
+  - zephyr
+  - gnuarmemb
+  - xtools
+supported:
+  - dma
+  - gpio
+  - hwinfo
+  - pinmux
+  - pwm
+  - spi
+  - uart
+  - usb_device
+  - watchdog
