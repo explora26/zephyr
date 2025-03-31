@@ -32,6 +32,7 @@
 		zephyr,shell-uart = &uart0;
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
+		zephyr,display = &st7789v;
 		zephyr,bt-hci = &esp32_bt_hci;
 	};
 
@@ -49,6 +50,45 @@
 		pwm_led0: pwm_led0 {
 			pwms = <&ledc0 0 PWM_HZ(250) PWM_POLARITY_NORMAL>;
 		};
+	};
+
+	mipi_dbi {
+		compatible = "zephyr,mipi-dbi-spi";
+		spi-dev = <&spi2>;
+		dc-gpios = <&gpio1 9 GPIO_ACTIVE_HIGH>;	     /* G33 */
+		reset-gpios = <&gpio1 7 GPIO_ACTIVE_LOW>;    /* G34 */
+		write-only;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		st7789v: st7789v@0 {
+			compatible = "sitronix,st7789v";
+			reg = <0>;
+			mipi-max-frequency = <20000000>;
+
+			width = <240>;
+			height = <320>;
+			x-offset = <0>;
+			y-offset = <0>;
+
+			vcom = <0x1a>;
+			gctrl = <0x75>;
+			vrhs = <0x13>;
+			vdvs = <0x20>;
+			mdac = <0x00>;
+			gamma = <0x01>;
+			colmod = <0x05>;
+			lcm = <0x2c>;
+			porch-param = [0c 0c 00 33 33];
+			cmd2en-param = [5a 69 02 00];
+			pwctrl1-param = [a4 a1];
+			pvgam-param = [d0 0d 14 0d 0d 09 38 44 4e 3a 17 18 2f 30];
+			nvgam-param = [d0 09 0f 08 07 14 37 44 4d 38 15 16 2c 2e];
+			ram-param = [00 E8];
+			rgb-param = [40 02 14];
+			mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
+		};
+
 	};
 };
 
