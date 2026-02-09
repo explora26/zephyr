@@ -4,3 +4,5 @@ board:
   vendor: weact
   socs:
     - name: stm32h743xx
+      variants:
+        - name: ext_flash_app

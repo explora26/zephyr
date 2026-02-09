@@ -161,14 +161,11 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&quadspi_clk_pf10 &quadspi_bk1_ncs_pg6
 		     &quadspi_bk1_io0_pd11 &quadspi_bk1_io1_pf9
-		     &quadspi_bk1_io2_pf7 &quadspi_bk1_io3_pf6
-		     &quadspi_bk2_io0_ph2 &quadspi_bk2_io1_ph3
-		     &quadspi_bk2_io2_pg9 &quadspi_bk2_io3_pg14>;
+		     &quadspi_bk1_io2_pf7 &quadspi_bk1_io3_pf6>;
 	/*
 	 * Two MT25QL512AB NOR Flash chips connected to QSPI in parallel
 	 * and accessed simultaneously, 4bits sent to/received from each.
 	 */
-	dual-flash;
 	status = "okay";
 
 	ext_flash_ctrl: qspi-flash-controller@0 {
@@ -189,9 +186,9 @@
 		/* Subsector erase 4KB, 32KB granularity for each Flash */
 		ext_flash: mt25ql512ab: ext-flash@0 {
 			compatible = "soc-nv-flash";
-			reg = <0x0 DT_SIZE_M(128)>; /* 128MB total in dual-flash mode */
+			reg = <0x0 DT_SIZE_M(64)>; /* 128MB total in dual-flash mode */
 			write-block-size = <1>; /* 1byte=4bits*2 in dual-flash mode */
-			erase-block-size = <DT_SIZE_K(8)>; /* 4KB*2 in dual-flash mode */
+			erase-block-size = <DT_SIZE_K(4)>; /* 4KB*2 in dual-flash mode */
 
 			partitions {
 				compatible = "fixed-partitions";

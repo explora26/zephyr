@@ -1,0 +1,65 @@
+/*
+ * Copyright (c) 2024 Charles Dias <charlesdias.cd@outlook.com>
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+#include "mini_stm32h743-common.dtsi"
+
+/ {
+	model = "WeAct Studio MiniSTM32H743 Core Board";
+	compatible = "weact,mini-stm32h743";
+
+	chosen {
+		zephyr,flash = &ext_flash;
+		zephyr,flash-controller = &ext_flash_ctrl;
+		zephyr,code-partition = &slot0_partition;
+	};
+};
+
+&flash0 {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		boot_partition: partition@0 {
+			label = "mcuboot";
+			reg = <0x00000000 DT_SIZE_K(128)>;
+		};
+	};
+};
+
+&ext_flash {
+	status = "okay";
+
+	partitions {
+		slot0_partition: partition@0 {
+			label = "image-0";
+			reg = <0x0 DT_SIZE_M(2)>; /* 60MB */
+		};
+	};
+};
+
+&w25q64_spi {
+	partitions {
+		compatible = "fixed-partitions";
+		#address-cells = <1>;
+		#size-cells = <1>;
+
+		storage_partition: partition@0 {
+			label = "storage";
+			reg = <0x00000000 DT_SIZE_M(2)>;
+		};
+		slot1_partition: partition@200000 {
+			label = "image-1";
+			reg = <0x02000000 DT_SIZE_M(2)>;
+		};
+		scratch_partition: partition@400000 {
+			label = "image-scratch";
+			reg = <0x00400000 DT_SIZE_M(2)>;
+		};
+	};
+};
+
