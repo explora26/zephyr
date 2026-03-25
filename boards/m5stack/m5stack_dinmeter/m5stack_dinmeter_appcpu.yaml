@@ -1,0 +1,7 @@
+identifier: m5stack_dinmeter/esp32s3/appcpu
+name: M5Stack DinMeter APPCPU
+type: mcu
+arch: xtensa
+toolchain:
+  - zephyr
+vendor: m5stack

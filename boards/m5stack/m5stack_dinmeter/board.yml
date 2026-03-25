@@ -1,0 +1,6 @@
+board:
+  name: m5stack_dinmeter
+  full_name: M5Stack DinMeter
+  vendor: m5stack
+  socs:
+  - name: esp32s3

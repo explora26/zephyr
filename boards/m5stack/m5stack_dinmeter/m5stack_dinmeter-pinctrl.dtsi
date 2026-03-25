@@ -1,0 +1,84 @@
+/*
+ * Copyright (c) 2024 TOKITA Hiroshi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pinctrl/esp-pinctrl-common.h>
+#include <zephyr/dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/pinctrl/esp32s3-gpio-sigmap.h>
+
+&pinctrl {
+	/* UART0: console via USB-UART bridge */
+	uart0_default: uart0_default {
+		group1 {
+			pinmux = <UART0_TX_GPIO43>;
+			output-high;
+		};
+
+		group2 {
+			pinmux = <UART0_RX_GPIO44>;
+			bias-pull-up;
+		};
+	};
+
+	/* I2C0: PORT.A external expansion port */
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO13>,
+				 <I2C0_SCL_GPIO15>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+
+	/* I2C1: internal bus (BM8563 RTC @ 0x51) */
+	i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_GPIO11>,
+				 <I2C1_SCL_GPIO12>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+
+	/* SPI2: ST7789 LCD display (write-only, no MISO) */
+	spim2_default: spim2_default {
+		group1 {
+			pinmux = <SPIM2_SCLK_GPIO6>,
+				 <SPIM2_CSEL_GPIO7>;
+		};
+
+		group2 {
+			pinmux = <SPIM2_MOSI_GPIO5>;
+			output-low;
+		};
+	};
+
+	/* SPI3: WS2812 RGB LED */
+	spim3_default: spim3_default {
+		group1 {
+			pinmux = <SPIM3_MOSI_GPIO21>;
+			output-low;
+		};
+	};
+
+	/* LEDC: buzzer (ch0/GPIO3) */
+	ledc0_default: ledc0_default {
+		group1 {
+			pinmux = <LEDC_CH0_GPIO3>;
+			output-enable;
+		};
+	};
+
+	/* PCNT0: rotary encoder (A=GPIO40 signal, B=GPIO41 control) */
+	pcnt0_default: pcnt0_default {
+		group1 {
+			pinmux = <PCNT0_CH0SIG_GPIO40>,
+				 <PCNT0_CH0CTRL_GPIO41>;
+			bias-pull-up;
+		};
+	};
+};

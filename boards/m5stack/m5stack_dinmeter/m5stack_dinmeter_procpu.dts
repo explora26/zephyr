@@ -1,0 +1,243 @@
+/*
+ * Copyright (c) 2024 TOKITA Hiroshi
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/dts-v1/;
+
+#include <espressif/esp32s3/esp32s3_fn8.dtsi>
+#include "m5stack_dinmeter-pinctrl.dtsi"
+#include <zephyr/dt-bindings/pwm/pwm.h>
+#include <zephyr/dt-bindings/led/led.h>
+#include <zephyr/dt-bindings/led/worldsemi_ws2812c.h>
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <espressif/partitions_0x0_amp.dtsi>
+
+/ {
+	model = "M5Stack DinMeter PROCPU";
+	compatible = "m5stack,dinmeter";
+
+	chosen {
+		zephyr,sram = &sram1;
+		zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,display = &st7789v;
+		zephyr,rtc = &bm8563;
+		zephyr,bt-hci = &esp32_bt_hci;
+	};
+
+	aliases {
+		sw0 = &encoder_btn;
+		watchdog0 = &wdt0;
+		i2c-0 = &i2c0;
+		i2c-1 = &i2c1;
+		led-strip = &status_rgb_led;
+		rtc = &bm8563;
+		qdec0 = &encoder;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		encoder_btn: encoder_button {
+			label = "Encoder button";
+			gpios = <&gpio1 10 GPIO_ACTIVE_LOW>;
+			zephyr,code = <INPUT_KEY_ENTER>;
+		};
+	};
+
+	/*
+	 * GPIO46 must be held HIGH to keep power on after wake-up.
+	 * Without this, the device re-enters sleep on button release.
+	 */
+	power_hold: power_hold {
+		compatible = "regulator-fixed";
+		regulator-name = "power-hold";
+		enable-gpios = <&gpio1 14 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+
+	fpc_lcd_bl: fpc_lcd_bl {
+		compatible = "regulator-fixed";
+		regulator-name = "fpc_lcd_bl";
+		enable-gpios = <&gpio0 9 GPIO_ACTIVE_HIGH>;
+		regulator-boot-on;
+	};
+
+	mipi_dbi {
+		compatible = "zephyr,mipi-dbi-spi";
+		spi-dev = <&spi2>;
+		dc-gpios = <&gpio0 4 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio0 8 GPIO_ACTIVE_LOW>;
+		write-only;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		st7789v: st7789v@0 {
+			compatible = "sitronix,st7789v";
+			reg = <0>;
+			vin-supply = <&fpc_lcd_bl>;
+			mipi-max-frequency = <40000000>;
+			width = <240>;
+			height = <135>;
+			x-offset = <40>;
+			y-offset = <52>;
+			vcom = <0x28>;
+			gctrl = <0x35>;
+			vrhs = <0x10>;
+			vdvs = <0x20>;
+			mdac = <0xa0>;
+			gamma = <0x01>;
+			colmod = <0x55>;
+			lcm = <0x2c>;
+			porch-param = [0c 0c 00 33 33];
+			cmd2en-param = [5a 69 02 00];
+			pwctrl1-param = [a4 a1];
+			pvgam-param = [d0 00 02 07 0a 28 32 44 42 06 0e 12 14 17];
+			nvgam-param = [d0 00 02 07 0a 28 31 54 47 0e 1c 17 1b 1e];
+			ram-param = [00 f0];
+			rgb-param = [40 02 14];
+			mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
+		};
+	};
+};
+
+&usb_serial {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-names = "default";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+/* I2C0: PORT.A external expansion */
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+};
+
+/* I2C1: internal (BM8563 RTC) */
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
+
+	bm8563: bm8563@51 {
+		compatible = "nxp,pcf8563";
+		reg = <0x51>;
+		status = "okay";
+	};
+};
+
+/* SPI2: ST7789 LCD display */
+&spi2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	pinctrl-0 = <&spim2_default>;
+	pinctrl-names = "default";
+};
+
+/* SPI3: WS2812 RGB LED on GPIO21 */
+&spi3 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	line-idle-low;
+	pinctrl-0 = <&spim3_default>;
+	pinctrl-names = "default";
+
+	status_rgb_led: ws2812@0 {
+		compatible = "worldsemi,ws2812-spi";
+		reg = <0x0>;
+		spi-max-frequency = <WS2812C_SPI_FREQ>;
+
+		chain-length = <1>;
+		color-mapping = <LED_COLOR_ID_GREEN>,
+				<LED_COLOR_ID_RED>,
+				<LED_COLOR_ID_BLUE>;
+		spi-one-frame = <WS2812C_ONE_FRAME>;
+		spi-zero-frame = <WS2812C_ZERO_FRAME>;
+		reset-delay = <250>;
+	};
+};
+
+/* LEDC: buzzer (ch0/GPIO3) */
+&ledc0 {
+	pinctrl-0 = <&ledc0_default>;
+	pinctrl-names = "default";
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	/* Buzzer */
+	channel0@0 {
+		reg = <0x0>;
+		timer = <0>;
+	};
+};
+
+/* PCNT: rotary encoder quadrature decoder */
+&pcnt {
+	pinctrl-0 = <&pcnt0_default>;
+	pinctrl-names = "default";
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	encoder: unit0@0 {
+		reg = <0>;
+		#address-cells = <1>;
+		#size-cells = <0>;
+		filter = <100>;
+
+		channelA@0 {
+			reg = <0>;
+			sig-pos-mode = <2>;
+			sig-neg-mode = <1>;
+			ctrl-h-mode = <1>;
+			ctrl-l-mode = <0>;
+		};
+	};
+};
+
+&trng0 {
+	status = "okay";
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&timer0 {
+	status = "okay";
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&esp32_bt_hci {
+	status = "okay";
+};
+
+&wifi {
+	status = "okay";
+};

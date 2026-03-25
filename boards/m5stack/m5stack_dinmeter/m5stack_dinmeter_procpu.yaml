@@ -1,0 +1,18 @@
+identifier: m5stack_dinmeter/esp32s3/procpu
+name: M5Stack DinMeter PROCPU
+type: mcu
+arch: xtensa
+toolchain:
+  - zephyr
+supported:
+  - gpio
+  - i2c
+  - spi
+  - watchdog
+  - uart
+  - pwm
+  - pinmux
+  - nvs
+  - display
+  - sensor
+vendor: m5stack
