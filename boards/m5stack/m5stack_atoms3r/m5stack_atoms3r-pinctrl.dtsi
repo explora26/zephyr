@@ -1,0 +1,57 @@
+/*
+ * Copyright (c) 2024 M5Stack
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+#include <zephyr/dt-bindings/pinctrl/esp-pinctrl-common.h>
+#include <zephyr/dt-bindings/pinctrl/esp32s3-pinctrl.h>
+#include <zephyr/dt-bindings/pinctrl/esp32s3-gpio-sigmap.h>
+
+&pinctrl {
+	uart0_default: uart0_default {
+		group1 {
+			pinmux = <UART0_TX_GPIO43>;
+			output-high;
+		};
+
+		group2 {
+			pinmux = <UART0_RX_GPIO44>;
+			bias-pull-up;
+		};
+	};
+
+	/* Internal I2C for IMU (BMI270) and RGB LED driver (LP5562) */
+	i2c0_default: i2c0_default {
+		group1 {
+			pinmux = <I2C0_SDA_GPIO45>,
+				 <I2C0_SCL_GPIO0>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+
+	/* External I2C for Grove connector (Port A) */
+	i2c1_default: i2c1_default {
+		group1 {
+			pinmux = <I2C1_SDA_GPIO2>,
+				 <I2C1_SCL_GPIO1>;
+			bias-pull-up;
+			drive-open-drain;
+			output-high;
+		};
+	};
+
+	/* SPI3 for display (GC9107) */
+	spim3_default: spim3_default {
+		group1 {
+			pinmux = <SPIM3_SCLK_GPIO15>;
+		};
+
+		group2 {
+			pinmux = <SPIM3_MOSI_GPIO21>;
+			output-low;
+		};
+	};
+};

@@ -266,7 +266,7 @@
 	status = "okay";
 	pinctrl-0 = <&spim2_default>;
 	pinctrl-names = "default";
-	clock-frequency = <20000000>;
+	clock-frequency = <40000000>;
 	cs-gpios = <&gpio0 3 GPIO_ACTIVE_LOW>, /* LCD     */
 		   <&gpio0 4 GPIO_ACTIVE_LOW>; /* TF-CARD */
 

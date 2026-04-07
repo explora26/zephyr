@@ -1,0 +1,147 @@
+/*
+ * Copyright (c) 2024 M5Stack
+ *
+ * SPDX-License-Identifier: Apache-2.0
+ */
+/dts-v1/;
+
+#include <espressif/esp32s3/esp32s3_pico_n8r8.dtsi>
+#include "m5stack_atoms3r-pinctrl.dtsi"
+#include "grove_connectors.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/display/panel.h>
+#include <espressif/partitions_0x0_amp.dtsi>
+
+/ {
+	model = "M5Stack AtomS3R PROCPU";
+	compatible = "m5stack,atoms3r";
+
+	chosen {
+		zephyr,sram = &sram1;
+		zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,display = &gc9107;
+		zephyr,bt-hci = &esp32_bt_hci;
+	};
+
+	aliases {
+		sw0 = &user_button_0;
+		watchdog0 = &wdt0;
+		accel0 = &bmi270;
+		led-controller-0 = &lp5562;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		/* Button underneath the LCD display */
+		user_button_0: button_0 {
+			label = "User button 0";
+			gpios = <&gpio1 9 GPIO_ACTIVE_LOW>; /* G41 */
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+
+	mipi_dbi {
+		compatible = "zephyr,mipi-dbi-spi";
+		spi-dev = <&spi3>;
+		dc-gpios = <&gpio1 10 GPIO_ACTIVE_HIGH>;  /* G42 */
+		reset-gpios = <&gpio1 16 GPIO_ACTIVE_LOW>; /* G48 */
+		write-only;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		gc9107: gc9107@0 {
+			compatible = "galaxycore,gc9x01x";
+			reg = <0>;
+			mipi-max-frequency = <40000000>;
+			pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+			width = <128>;
+			height = <128>;
+			display-inversion;
+			orientation = "normal";
+		};
+	};
+};
+
+&usb_serial {
+	status = "okay";
+};
+
+&uart0 {
+	status = "okay";
+	current-speed = <115200>;
+	pinctrl-0 = <&uart0_default>;
+	pinctrl-names = "default";
+};
+
+&i2c0 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+
+	bmi270: bmi270@68 {
+		compatible = "bosch,bmi270";
+		reg = <0x68>;
+		status = "okay";
+		irq-gpios = <&gpio0 16 GPIO_ACTIVE_LOW>; /* G16 INT1 */
+	};
+
+	lp5562: lp5562@30 {
+		compatible = "ti,lp5562";
+		reg = <0x30>;
+		status = "okay";
+		white-output-current = <50>; /* 5mA for LCD backlight */
+	};
+};
+
+&i2c1 {
+	status = "okay";
+	clock-frequency = <I2C_BITRATE_STANDARD>;
+	pinctrl-0 = <&i2c1_default>;
+	pinctrl-names = "default";
+};
+
+&trng0 {
+	status = "okay";
+};
+
+&spi3 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+	pinctrl-0 = <&spim3_default>;
+	pinctrl-names = "default";
+	cs-gpios = <&gpio0 14 GPIO_ACTIVE_LOW>;
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&timer0 {
+	status = "okay";
+};
+
+&timer1 {
+	status = "okay";
+};
+
+&esp32_bt_hci {
+	status = "okay";
+};
+
+&wifi {
+	status = "okay";
+};
