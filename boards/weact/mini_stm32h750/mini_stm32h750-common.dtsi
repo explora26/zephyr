@@ -19,7 +19,7 @@
 
 	ext_flash_mem: memory@90000000 {
 		compatible = "zephyr,memory-region";
-		reg = <0x90000000 DT_SIZE_M(128)>; /* 128MB */
+		reg = <0x90000000 DT_SIZE_M(8)>; /* 8MB */
 		zephyr,memory-region = "EXT_FLASH";
 		zephyr,memory-attr = <DT_MEM_ARM_MPU_FLASH>;
 	};
@@ -190,15 +190,15 @@ zephyr_udc0: &usbotg_fs {
 
 		#address-cells = <1>;
 		#size-cells = <1>;
-		ranges = <0x0 0x90000000 DT_SIZE_M(128)>; /* Ext Flash mem-mapped to 0x90000000 */
+		ranges = <0x0 0x90000000 DT_SIZE_M(8)>;
 
 		/* Sector erase 64KB uniform granularity for each Flash */
 		/* Subsector erase 4KB, 32KB granularity for each Flash */
 		ext_flash: w25q64_qspi: ext-flash@0 {
 			compatible = "soc-nv-flash";
-			reg = <0x0 DT_SIZE_M(8)>; /* 128MB total in dual-flash mode */
-			write-block-size = <1>; /* 1byte=4bits*2 in dual-flash mode */
-			erase-block-size = <DT_SIZE_K(4)>; /* 4KB*2 in dual-flash mode */
+			reg = <0x0 DT_SIZE_M(8)>; /* 8MB */
+			write-block-size = <1>;
+			erase-block-size = <DT_SIZE_K(4)>;
 
 			partitions {
 				compatible = "fixed-partitions";
@@ -207,11 +207,6 @@ zephyr_udc0: &usbotg_fs {
 			};
 		};
 
-		partitions {
-			compatible = "fixed-partitions";
-			#address-cells = <1>;
-			#size-cells = <1>;
-		};
 	};
 };
 

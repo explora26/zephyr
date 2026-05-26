@@ -56,9 +56,5 @@
 			label = "image-1";
 			reg = <0x00200000 DT_SIZE_M(2)>;
 		};
-		scratch_partition: partition@400000 {
-			label = "image-scratch";
-			reg = <0x00400000 DT_SIZE_M(2)>;
-		};
 	};
 };

@@ -27,7 +27,7 @@
 
 		storage_partition: partition@0 {
 			label = "storage";
-			reg = <0x00000000 DT_SIZE_M(8)>; /* 128MB */
+			reg = <0x00000000 DT_SIZE_M(8)>; /* 8MB */
 		};
 	};
 };
