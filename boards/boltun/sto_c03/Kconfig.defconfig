@@ -1,0 +1,7 @@
+# Boltun STO-C03 board configuration
+
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_STO_C03
+
+endif # BOARD_STO_C03

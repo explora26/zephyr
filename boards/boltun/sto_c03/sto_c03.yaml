@@ -1,0 +1,18 @@
+identifier: sto_c03
+name: Boltun STO-C03
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+ram: 512
+flash: 128
+supported:
+  - gpio
+  - counter
+  - spi
+  - backup_sram
+  - watchdog
+  - qspi
+  - ethernet
+vendor: boltun

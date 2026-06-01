@@ -1,0 +1,13 @@
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_STO_C03_STM32H750XX_EXT_FLASH_APP
+
+choice BOOTLOADER
+	default BOOTLOADER_MCUBOOT
+endchoice
+
+choice BOOT_SIGNATURE_TYPE
+	default BOOT_SIGNATURE_TYPE_NONE
+endchoice
+
+endif # BOARD_STO_C03_STM32H750XX_EXT_FLASH_APP

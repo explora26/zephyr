@@ -1,0 +1,19 @@
+identifier: sto_c03/stm32h750xx/ext_flash_app
+name: Boltun STO-C03 with App in Ext Flash
+type: mcu
+arch: arm
+toolchain:
+  - zephyr
+  - gnuarmemb
+sysbuild: true
+ram: 512
+flash: 6143  # size in kB of 1 app slot (6MB) minus MCUboot header size (1KB)
+supported:
+  - gpio
+  - counter
+  - spi
+  - backup_sram
+  - watchdog
+  - qspi
+  - ethernet
+vendor: boltun

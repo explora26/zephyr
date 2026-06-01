@@ -1,0 +1,8 @@
+board:
+  name: sto_c03
+  full_name: Boltun STO-C03
+  vendor: boltun
+  socs:
+    - name: stm32h750xx
+      variants:
+        - name: ext_flash_app
