@@ -358,6 +358,11 @@ static int element_token(enum json_tokens token)
 	case JSON_TOK_OBJ_ARRAY:
 	case JSON_TOK_TRUE:
 	case JSON_TOK_FALSE:
+	/* Accept a JSON null as a valid value token so obj_next() doesn't reject
+	 * the whole object. Matched fields are handled in decode_value() (left at
+	 * default); unmatched null fields are skipped in skip_field().
+	 */
+	case JSON_TOK_NULL:
 		return 0;
 	default:
 		return -EINVAL;
@@ -914,6 +919,15 @@ static int64_t decode_value(struct json_obj *obj,
 			    const struct json_obj_descr *descr,
 			    struct json_token *value, void *field, void *val)
 {
+	/* A JSON `null` carries no value. Treat it as "field absent": leave the
+	 * backing field at its caller-provided default (typically NULL/0) and
+	 * report success so the rest of the object still parses, instead of
+	 * failing the whole object with -EINVAL. Servers commonly emit null for
+	 * unset string fields (e.g. {"arg1":null,...}).
+	 */
+	if (value->type == JSON_TOK_NULL) {
+		return 0;
+	}
 
 	if (!equivalent_types(value->type, descr->type)) {
 		return -EINVAL;
