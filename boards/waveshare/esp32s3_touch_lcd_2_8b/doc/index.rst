@@ -91,8 +91,10 @@ Supported Features
 
 .. zephyr:board-supported-hw::
 
-The RGB LCD panel is not supported yet. The LCD backlight is available as the ``pwm-lcd0``
-PWM LED.
+The LCD is driven by the LCD_CAM RGB interface (``lcd_cam_rgb``), which streams a framebuffer in
+PSRAM to the panel and is the ``zephyr,display`` device. The ST7701S panel controller is
+configured once at boot over 3-wire SPI, on the SPI bus shared with the microSD card. The LCD
+backlight is available as the ``pwm-lcd0`` PWM LED and is not switched on by the display driver.
 
 Battery state-of-charge estimation is provided by the ``fuel_gauge`` node, which is disabled by
 default. Enable it in an overlay and adapt ``charge-full-design-microamp-hours`` to the battery.

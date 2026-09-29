@@ -15,6 +15,33 @@
 		};
 	};
 
+	/* 16-bit RGB565: DATA0-4 blue, DATA5-10 green, DATA11-15 red */
+	lcd_cam_default: lcd_cam_default {
+		group1 {
+			pinmux = <LCD_CAM_LCD_CLK_GPIO41>,
+				 <LCD_CAM_H_ENABLE_LCD_GPIO40>,
+				 <LCD_CAM_H_SYNC_LCD_GPIO38>,
+				 <LCD_CAM_V_SYNC_LCD_GPIO39>,
+				 <LCD_CAM_DATA_OUT0_GPIO5>,
+				 <LCD_CAM_DATA_OUT1_GPIO45>,
+				 <LCD_CAM_DATA_OUT2_GPIO48>,
+				 <LCD_CAM_DATA_OUT3_GPIO47>,
+				 <LCD_CAM_DATA_OUT4_GPIO21>,
+				 <LCD_CAM_DATA_OUT5_GPIO14>,
+				 <LCD_CAM_DATA_OUT6_GPIO13>,
+				 <LCD_CAM_DATA_OUT7_GPIO12>,
+				 <LCD_CAM_DATA_OUT8_GPIO11>,
+				 <LCD_CAM_DATA_OUT9_GPIO10>,
+				 <LCD_CAM_DATA_OUT10_GPIO9>,
+				 <LCD_CAM_DATA_OUT11_GPIO46>,
+				 <LCD_CAM_DATA_OUT12_GPIO3>,
+				 <LCD_CAM_DATA_OUT13_GPIO8>,
+				 <LCD_CAM_DATA_OUT14_GPIO18>,
+				 <LCD_CAM_DATA_OUT15_GPIO17>;
+			output-enable;
+		};
+	};
+
 	ledc0_default: ledc0_default {
 		group1 {
 			pinmux = <LEDC_CH0_GPIO6>;

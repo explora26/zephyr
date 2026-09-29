@@ -8,6 +8,26 @@ if BOARD_ESP32S3_TOUCH_LCD_2_8B_ESP32S3_PROCPU
 config SPI_INIT_PRIORITY
 	default 75 if SPI
 
+if DISPLAY
+
+# The backlight is dimmed through the LEDC PWM
+configdefault PWM
+	default y
+
+# One 480x640 RGB565 framebuffer takes 600 KB of PSRAM
+configdefault ESP_SPIRAM_HEAP_SIZE
+	default 2097152
+
+# A frame is streamed as one DMA transfer, split in descriptors of 4092 bytes
+configdefault DMA_ESP32_MAX_DESCRIPTOR_NUM
+	default 152
+
+# The panel controller is configured over 3-wire SPI
+configdefault MIPI_DBI_SPI_3WIRE
+	default y
+
+endif # DISPLAY
+
 if FUEL_GAUGE
 
 # Composite fuel gauge gets battery voltage from ADC-based voltage-divider sensor

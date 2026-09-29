@@ -8,7 +8,9 @@
 #include <espressif/esp32s3/esp32s3.dtsi>
 #include <zephyr/dt-bindings/adc/adc.h>
 #include <zephyr/dt-bindings/battery/battery.h>
+#include <zephyr/dt-bindings/display/panel.h>
 #include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <zephyr/dt-bindings/mipi_dbi/mipi_dbi.h>
 #include <zephyr/dt-bindings/pwm/pwm.h>
 #include <espressif/partitions_0x0_amp_16M.dtsi>
 #include "esp32s3_touch_lcd_2_8b-pinctrl.dtsi"
@@ -37,6 +39,7 @@
 		zephyr,flash = &flash0;
 		zephyr,code-partition = &slot0_partition;
 		zephyr,bt-hci = &esp32_bt_hci;
+		zephyr,display = &lcd_cam_rgb;
 		zephyr,touch = &gt911;
 	};
 
@@ -78,6 +81,58 @@
 		device-chemistry = "lithium-ion-polymer";
 		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
 		charge-full-design-microamp-hours = <1000000>;
+	};
+
+	/* ST7701S register setup over 3-wire SPI, the pixels go over RGB */
+	mipi_dbi_lcd: mipi_dbi_lcd {
+		compatible = "zephyr,mipi-dbi-spi";
+		spi-dev = <&spi2>;
+		reset-gpios = <&exio 0 GPIO_ACTIVE_LOW>;
+		write-only;
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		st7701: st7701@1 {
+			compatible = "sitronix,st7701";
+			reg = <1>;
+			mipi-max-frequency = <DT_FREQ_M(2)>;
+			mipi-mode = "MIPI_DBI_MODE_SPI_3WIRE";
+			width = <480>;
+			height = <640>;
+			pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+			bk3-ef = [ef 08];
+			lneset = [c0 4f 00];
+			porctrl = [c1 10 02];
+			invsel = [c2 07 02];
+			cc-control = [cc 10];
+			pvgamctrl = [b0 00 10 17 0d 11 06 05 08 07 1f 04 11 0e 29 30 1f];
+			nvgamctrl = [b1 00 0d 14 0e 11 06 04 08 08 20 05 13 13 26 30 1f];
+			vrhs = <0x65>;
+			vcom = <0x71>;
+			vghss = <0x82>;
+			vgls = <0x42>;
+			pwctlr1 = <0x85>;
+			pwctlr2 = <0x20>;
+			bk1-c0 = <0x09>;
+			spd1 = <0x78>;
+			spd2 = <0x78>;
+			mipiset1 = <0x88>;
+			bk1-ee = <0x42>;
+			gip-e0 = [e0 00 00 02];
+			gip-e1 = [e1 04 a0 06 a0 05 a0 07 a0 00 44 44];
+			gip-e2 = [e2 00 00 00 00 00 00 00 00 00 00 00 00];
+			gip-e3 = [e3 00 00 22 22];
+			gip-e4 = [e4 44 44];
+			gip-e5 = [e5 0c 90 a0 a0 0e 92 a0 a0 08 8c a0 a0 0a 8e a0 a0];
+			gip-e6 = [e6 00 00 22 22];
+			gip-e7 = [e7 44 44];
+			gip-e8 = [e8 0d 91 a0 a0 0f 93 a0 a0 09 8d a0 a0 0b 8f a0 a0];
+			gip-eb = [eb 00 00 e4 e4 44 00 40];
+			gip-ed = [ed ff f5 47 6f 0b a1 ab ff ff ba 1a b0 f6 74 5f ff];
+			gip-ef = [ef 08 08 08 40 3f 64];
+			bk3-e6 = [e6 16 7c];
+			bk3-e8 = [e8 00 0e];
+		};
 	};
 };
 
@@ -135,6 +190,38 @@
 	};
 };
 
+&lcd_cam {
+	status = "okay";
+	pinctrl-0 = <&lcd_cam_default>;
+	pinctrl-names = "default";
+};
+
+&lcd_cam_rgb {
+	status = "okay";
+	width = <480>;
+	height = <640>;
+	pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+
+	display-timings {
+		compatible = "zephyr,panel-timing";
+		clock-frequency = <16000000>;
+		hsync-len = <10>;
+		hback-porch = <70>;
+		hfront-porch = <60>;
+		vsync-len = <10>;
+		vback-porch = <20>;
+		vfront-porch = <20>;
+		hsync-active = <0>;
+		vsync-active = <0>;
+		de-active = <1>;
+		pixelclk-active = <1>;
+	};
+};
+
+&dma {
+	status = "okay";
+};
+
 &adc0 {
 	status = "okay";
 	#address-cells = <1>;
@@ -169,7 +256,7 @@
 	#size-cells = <0>;
 	pinctrl-0 = <&spim2_default>;
 	pinctrl-names = "default";
-	cs-gpios = <&exio 3 GPIO_ACTIVE_LOW>;
+	cs-gpios = <&exio 3 GPIO_ACTIVE_LOW>, <&exio 2 GPIO_ACTIVE_LOW>;
 
 	sdcard0: sdhc@0 {
 		compatible = "zephyr,sdhc-spi-slot";
