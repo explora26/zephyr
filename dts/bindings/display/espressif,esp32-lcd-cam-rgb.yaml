@@ -1,0 +1,42 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  ESP32 LCD-CAM RGB (DPI) display controller
+
+  Streams a framebuffer held in PSRAM to a panel over a 16-bit parallel RGB
+  interface with HSYNC, VSYNC, DE and PCLK signals. The pins are configured
+  through the pinctrl of the parent LCD-CAM node, and the panel timing is
+  described by a zephyr,panel-timing child node named display-timings.
+
+  Only the RGB565 pixel format is supported. Panels that need a register
+  setup, such as the Sitronix ST7701, are described separately on their
+  serial configuration bus.
+
+  Example:
+
+    &lcd_cam_rgb {
+      status = "okay";
+      width = <480>;
+      height = <640>;
+      pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+
+      display-timings {
+        compatible = "zephyr,panel-timing";
+        clock-frequency = <16000000>;
+        hsync-len = <10>;
+        hback-porch = <70>;
+        hfront-porch = <60>;
+        vsync-len = <10>;
+        vback-porch = <20>;
+        vfront-porch = <20>;
+        hsync-active = <0>;
+        vsync-active = <0>;
+        de-active = <1>;
+        pixelclk-active = <1>;
+      };
+    };
+
+compatible: "espressif,esp32-lcd-cam-rgb"
+
+include: lcd-controller.yaml
