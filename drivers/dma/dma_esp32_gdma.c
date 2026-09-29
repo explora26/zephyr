@@ -117,6 +117,8 @@ typedef dma_descriptor_t esp_dma_desc_t;
 struct dma_esp32_channel {
 	uint8_t dir;
 	uint8_t channel_id;
+	/* TX descriptor list is a ring, the transfer repeats until stopped */
+	bool cyclic;
 	int periph_id;
 	dma_callback_t cb;
 	void *user_data;
@@ -435,6 +437,9 @@ static int dma_esp32_config_descriptor(struct dma_esp32_channel *dma_channel,
 				desc_iter->next = NULL;
 				if (dma_channel->dir == DMA_TX) {
 					desc_iter->dw0.suc_eof = 1;
+					if (dma_channel->cyclic) {
+						desc_iter->next = dma_channel->desc_list;
+					}
 				}
 				break;
 			}
@@ -565,10 +570,19 @@ static int dma_esp32_config_tx(const struct device *dev, struct dma_esp32_channe
 	if (config_dma->source_burst_length) {
 		gdma_hal_enable_burst(&data->hal, dma_channel->channel_id,
 				      GDMA_CHANNEL_DIRECTION_TX, true, true);
+		/* Block size of external memory (PSRAM) accesses */
+		if (config_dma->source_burst_length == 16U ||
+		    config_dma->source_burst_length == 32U ||
+		    config_dma->source_burst_length == 64U) {
+			gdma_hal_set_burst_size(&data->hal, dma_channel->channel_id,
+						GDMA_CHANNEL_DIRECTION_TX,
+						config_dma->source_burst_length);
+		}
 	}
 
 	dma_channel->cb = config_dma->dma_callback;
 	dma_channel->user_data = config_dma->user_data;
+	dma_channel->cyclic = config_dma->cyclic != 0U;
 
 	gdma_hal_enable_intr(&data->hal, dma_channel->channel_id, GDMA_CHANNEL_DIRECTION_TX,
 			     GDMA_LL_TX_EVENT_MASK, false);
@@ -600,6 +614,11 @@ static int dma_esp32_config(const struct device *dev, uint32_t channel,
 	if (config_dma->source_burst_length != config_dma->dest_burst_length) {
 		LOG_ERR("Source and destination burst lengths must be equal");
 		return -EINVAL;
+	}
+
+	if (config_dma->cyclic && config_dma->channel_direction != MEMORY_TO_PERIPHERAL) {
+		LOG_ERR("Cyclic transfers are only supported from memory to a peripheral");
+		return -ENOTSUP;
 	}
 
 	dma_channel->periph_id = config_dma->channel_direction == MEMORY_TO_MEMORY
@@ -836,11 +855,14 @@ static int dma_esp32_reload(const struct device *dev, uint32_t channel, uint32_t
 		desc_iter->dw0.owner = DMA_DESCRIPTOR_BUFFER_OWNER_DMA;
 		if (size <= DMA_DESCRIPTOR_BUFFER_MAX_SIZE_4B_ALIGNED) {
 			desc_iter->dw0.size = size;
+			desc_iter->next = NULL;
 			if (dma_channel->dir == DMA_TX) {
 				desc_iter->dw0.length = size;
 				desc_iter->dw0.suc_eof = 1;
+				if (dma_channel->cyclic) {
+					desc_iter->next = dma_channel->desc_list;
+				}
 			}
-			desc_iter->next = NULL;
 			break;
 		}
 		desc_iter->dw0.size = DMA_DESCRIPTOR_BUFFER_MAX_SIZE_4B_ALIGNED;
