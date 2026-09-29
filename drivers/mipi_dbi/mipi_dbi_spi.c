@@ -103,6 +103,9 @@ static void mipi_dbi_spi_te_cb(const struct device *dev,
 
 #endif /* MIPI_DBI_SPI_TE_REQUIRED */
 
+/* Number of 9 bit words sent per SPI transfer in 3 wire mode */
+#define MIPI_DBI_SPI_3WIRE_CHUNK_WORDS 32
+
 static inline int
 mipi_dbi_spi_write_helper_3wire(const struct device *dev,
 				const struct mipi_dbi_config *dbi_config,
@@ -110,12 +113,17 @@ mipi_dbi_spi_write_helper_3wire(const struct device *dev,
 				const uint8_t *data_buf, size_t len)
 {
 	const struct mipi_dbi_spi_config *config = dev->config;
-	struct mipi_dbi_spi_data *data = dev->data;
-	struct spi_buf buffer;
+	uint16_t words[MIPI_DBI_SPI_3WIRE_CHUNK_WORDS];
+	struct spi_config tmp_config;
+	struct spi_buf buffer = {
+		.buf = words,
+	};
 	struct spi_buf_set buf_set = {
 		.buffers = &buffer,
 		.count = 1,
 	};
+	size_t count = 0;
+	size_t i = 0;
 	int ret = 0;
 
 	/*
@@ -127,26 +135,37 @@ mipi_dbi_spi_write_helper_3wire(const struct device *dev,
 	    != SPI_WORD_SET(9)) {
 		return -ENOTSUP;
 	}
-	buffer.buf = &data->spi_byte;
-	buffer.len = 2;
 
-	/* Send command */
+	/*
+	 * Keep CS asserted from the command through its last parameter,
+	 * the controller can interpret a CS break as the end of a command.
+	 */
+	memcpy(&tmp_config, &dbi_config->config, sizeof(tmp_config));
+	tmp_config.operation |= SPI_HOLD_ON_CS | SPI_LOCK_ON;
+
 	if (cmd_present) {
-		data->spi_byte = cmd;
-		ret = spi_write(config->spi_dev, &dbi_config->config, &buf_set);
-		if (ret < 0) {
-			goto out;
-		}
+		words[count++] = cmd;
 	}
-	/* Write data, byte by byte */
-	for (size_t i = 0; i < len; i++) {
-		data->spi_byte = MIPI_DBI_DC_BIT | data_buf[i];
-		ret = spi_write(config->spi_dev, &dbi_config->config, &buf_set);
-		if (ret < 0) {
-			goto out;
+
+	do {
+		while (count < ARRAY_SIZE(words) && i < len) {
+			words[count++] = MIPI_DBI_DC_BIT | data_buf[i++];
 		}
-	}
-out:
+
+		if (count == 0) {
+			break;
+		}
+
+		buffer.len = count * sizeof(words[0]);
+		ret = spi_write(config->spi_dev, &tmp_config, &buf_set);
+		if (ret < 0) {
+			break;
+		}
+		count = 0;
+	} while (i < len);
+
+	spi_release(config->spi_dev, &tmp_config);
+
 	return ret;
 }
 
