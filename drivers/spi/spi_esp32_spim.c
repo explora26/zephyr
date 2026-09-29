@@ -19,6 +19,7 @@ LOG_MODULE_REGISTER(esp32_spi, CONFIG_SPI_LOG_LEVEL);
 #include <soc.h>
 #include <esp_memory_utils.h>
 #include <zephyr/drivers/spi.h>
+#include <zephyr/sys/byteorder.h>
 #include "spi_rtio.h"
 #include <zephyr/drivers/interrupt_controller/intc_esp32.h>
 #ifdef SOC_GDMA_SUPPORTED
@@ -202,6 +203,71 @@ static void spi_esp32_dma_tx_start(const struct device *dev, uint8_t *buf, size_
 }
 #endif /* SOC_GDMA_SUPPORTED */
 
+/*
+ * Words that are not a multiple of 8 bits long (e.g. the 9-bit words of a
+ * 3-wire MIPI DBI link) are stored one per 16-bit frame in memory. Pack them
+ * MSB first into a contiguous bit stream and clock out the exact bit count.
+ * Only transmit-only CPU transfers are supported, see spi_esp32_check_word_size().
+ */
+static void IRAM_ATTR spi_esp32_transfer_packed(const struct device *dev)
+{
+	struct spi_esp32_data *data = dev->data;
+	struct spi_context *ctx = &data->ctx;
+	spi_hal_context_t *hal = &data->hal;
+	spi_hal_dev_config_t *hal_dev = &data->dev_config;
+	spi_hal_trans_config_t *hal_trans = &data->trans_config;
+	const uint16_t mask = BIT_MASK(data->word_size);
+	uint8_t buf[SOC_SPI_MAXIMUM_BUFFER_SIZE] = {0};
+	size_t frames = MIN(spi_context_max_continuous_chunk(ctx),
+			    (sizeof(buf) * 8U) / data->word_size);
+	size_t tx_remaining = (ctx->tx_len > frames) ? (ctx->tx_len - frames) : 0;
+	size_t rx_remaining = (ctx->rx_len > frames) ? (ctx->rx_len - frames) : 0;
+	size_t bit_pos = 0;
+
+	for (size_t i = 0; i < frames; i++) {
+		uint16_t word = 0;
+
+		if (ctx->tx_buf != NULL) {
+			word = sys_get_le16(&ctx->tx_buf[i * data->dfs]) & mask;
+		}
+
+		for (int b = data->word_size - 1; b >= 0; b--) {
+			if ((word & BIT(b)) != 0U) {
+				buf[bit_pos / 8U] |= BIT(7U - (bit_pos % 8U));
+			}
+			bit_pos++;
+		}
+	}
+
+	for (size_t i = 1; i < ctx->tx_count; i++) {
+		tx_remaining += ctx->current_tx[i].len;
+	}
+	for (size_t i = 1; i < ctx->rx_count; i++) {
+		rx_remaining += ctx->current_rx[i].len;
+	}
+
+	hal_trans->send_buffer = buf;
+	hal_trans->rcv_buffer = NULL;
+	hal_trans->tx_bitlen = bit_pos;
+	hal_trans->rx_bitlen = bit_pos;
+	hal_trans->cs_keep_active =
+		(UTIL_OR(IS_ENABLED(DT_SPI_CTX_HAS_NO_CS_GPIOS), (ctx->num_cs_gpios == 0)) &&
+		 (tx_remaining > 0 || rx_remaining > 0));
+
+	spi_hal_setup_trans(hal, hal_dev, hal_trans);
+	spi_hal_push_tx_buffer(hal, hal_trans);
+	spi_hal_enable_data_line(hal->hw, true, false);
+	spi_hal_user_start(hal);
+	spi_context_update_tx(ctx, data->dfs, frames);
+
+	while (!spi_hal_usr_is_done(hal)) {
+		/* nop */
+	}
+
+	/* Receive buffers can only be placeholders here, skip them */
+	spi_context_update_rx(ctx, data->dfs, frames);
+}
+
 static int IRAM_ATTR spi_esp32_transfer(const struct device *dev)
 {
 	struct spi_esp32_data *data = dev->data;
@@ -222,6 +288,11 @@ static int IRAM_ATTR spi_esp32_transfer(const struct device *dev)
 	size_t dma_len_rx = MIN(ctx->rx_len * data->dfs, SPI_DMA_MAX_BUFFER_SIZE);
 	bool prepare_data = true;
 	int err = 0;
+
+	if ((data->word_size % 8U) != 0U) {
+		spi_esp32_transfer_packed(dev);
+		return 0;
+	}
 
 	if (cfg->dma_enabled) {
 		/* bit_len needs to be at least one byte long when using DMA */
@@ -969,14 +1040,42 @@ static int IRAM_ATTR spi_esp32_configure(const struct device *dev,
 
 static inline uint8_t spi_esp32_get_frame_size(const struct spi_config *spi_cfg)
 {
-	uint8_t dfs = SPI_WORD_SIZE_GET(spi_cfg->operation);
+	uint8_t dfs = DIV_ROUND_UP(SPI_WORD_SIZE_GET(spi_cfg->operation), 8);
 
-	dfs /= 8;
 	if ((dfs == 0) || (dfs > 4)) {
 		LOG_WRN("Unsupported dfs, 1-byte size will be used");
 		dfs = 1;
 	}
 	return dfs;
+}
+
+static int spi_esp32_check_word_size(const struct device *dev, const struct spi_config *spi_cfg,
+				     const struct spi_buf_set *rx_bufs)
+{
+	const struct spi_esp32_config *cfg = dev->config;
+	uint8_t word_size = SPI_WORD_SIZE_GET(spi_cfg->operation);
+
+	if ((word_size % 8U) == 0U) {
+		return 0;
+	}
+
+	if (word_size > 16U || cfg->dma_enabled || (spi_cfg->operation & SPI_TRANSFER_LSB) ||
+	    SPI_OP_MODE_GET(spi_cfg->operation) != SPI_OP_MODE_CONTROLLER) {
+		LOG_ERR("%u-bit words need a transmit-only, MSB first controller transfer "
+			"without DMA", word_size);
+		return -ENOTSUP;
+	}
+
+	if (rx_bufs != NULL) {
+		for (size_t i = 0; i < rx_bufs->count; i++) {
+			if (rx_bufs->buffers[i].buf != NULL) {
+				LOG_ERR("Receiving %u-bit words is not supported", word_size);
+				return -ENOTSUP;
+			}
+		}
+	}
+
+	return 0;
 }
 
 static int transceive(const struct device *dev,
@@ -998,7 +1097,13 @@ static int transceive(const struct device *dev,
 
 	spi_context_lock(&data->ctx, asynchronous, cb, userdata, spi_cfg);
 
+	ret = spi_esp32_check_word_size(dev, spi_cfg, rx_bufs);
+	if (ret != 0) {
+		goto done;
+	}
+
 	data->dfs = spi_esp32_get_frame_size(spi_cfg);
+	data->word_size = SPI_WORD_SIZE_GET(spi_cfg->operation);
 
 	spi_context_buffers_setup(&data->ctx, tx_bufs, rx_bufs, data->dfs);
 
