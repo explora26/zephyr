@@ -1,0 +1,28 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig DISPLAY_ESP32_LCD_CAM_RGB
+	bool "ESP32 LCD-CAM RGB display controller"
+	default y
+	depends on DT_HAS_ESPRESSIF_ESP32_LCD_CAM_RGB_ENABLED
+	select DMA
+	select ESP_SPIRAM
+	select SHARED_MULTI_HEAP
+	help
+	  Enable driver for the RGB (DPI) interface of the ESP32 LCD-CAM
+	  peripheral, which streams a framebuffer to the panel. The
+	  framebuffers are allocated from PSRAM.
+
+if DISPLAY_ESP32_LCD_CAM_RGB
+
+config DISPLAY_ESP32_LCD_CAM_RGB_FB_NUM
+	int "Number of framebuffers"
+	default 1
+	range 1 2
+	help
+	  With two framebuffers a frame is drawn while the other one is on
+	  screen and they are swapped at a frame start, so an update does not
+	  tear. A partial update then copies the whole frame on screen into
+	  the buffer being drawn first.
+
+endif # DISPLAY_ESP32_LCD_CAM_RGB
