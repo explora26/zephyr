@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+title: Sitronix ST7701 display controller on MIPI DBI bus
+
+description: |
+    The Sitronix ST7701 is a 16.7M colors TFT-LCD controller
+    with a maximum 480RGBx864 resolution.
+
+    On the MIPI DBI bus the controller is only configured through its
+    serial interface, typically 3-wire SPI with 9-bit words. The pixel
+    data is streamed through the controller's RGB (DPI) interface by a
+    separate display controller, which is the display device to use.
+
+compatible: "sitronix,st7701"
+
+include: ["mipi-dbi-spi-device.yaml", "sitronix,st7701-common.yaml"]
+
+properties:
+  pixel-format:
+    type: int
+    default: 16
+    description: |
+      Pixel format of the RGB interface. The default is RGB565.
+    enum:
+      - 1 # PANEL_PIXEL_FORMAT_RGB_888
+      - 16 # PANEL_PIXEL_FORMAT_RGB_565
