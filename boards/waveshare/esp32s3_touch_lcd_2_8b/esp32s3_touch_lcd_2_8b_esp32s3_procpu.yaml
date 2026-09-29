@@ -5,10 +5,15 @@ arch: xtensa
 toolchain:
   - zephyr
 supported:
+  - adc
   - gpio
   - i2c
   - input
   - pwm
+  - rtc
+  - sdhc
+  - sensor
+  - spi
   - uart
   - watchdog
 vendor: waveshare

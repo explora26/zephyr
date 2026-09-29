@@ -6,6 +6,8 @@
 /dts-v1/;
 
 #include <espressif/esp32s3/esp32s3.dtsi>
+#include <zephyr/dt-bindings/adc/adc.h>
+#include <zephyr/dt-bindings/battery/battery.h>
 #include <zephyr/dt-bindings/input/input-event-codes.h>
 #include <zephyr/dt-bindings/pwm/pwm.h>
 #include <espressif/partitions_0x0_amp_16M.dtsi>
@@ -16,9 +18,13 @@
 	compatible = "waveshare,esp32-s3-touch-lcd-2.8b";
 
 	aliases {
+		accel0 = &qmi8658;
+		fuel-gauge0 = &fuel_gauge;
 		i2c-0 = &i2c0;
 		pwm-0 = &ledc0;
 		pwm-lcd0 = &pwm_lcd0;
+		rtc = &rtc0;
+		sdhc0 = &sdcard0;
 		sw0 = &button0;
 		uart-0 = &uart0;
 		watchdog0 = &wdt0;
@@ -52,6 +58,27 @@
 			label = "LCD backlight";
 		};
 	};
+
+	vbatt: vbatt {
+		compatible = "voltage-divider";
+		io-channels = <&adc0 3>;
+		output-ohms = <100000>;
+		full-ohms = <(200000 + 100000)>;
+		skip-calibration; /* ESP32 ADC does not support calibration */
+	};
+
+	/*
+	 * Enable this node for battery state-of-charge estimation based on the
+	 * battery voltage. Adapt the capacity to the battery in use.
+	 */
+	fuel_gauge: fuel_gauge {
+		status = "disabled";
+		compatible = "zephyr,fuel-gauge-composite";
+		source-primary = <&vbatt>;
+		device-chemistry = "lithium-ion-polymer";
+		ocv-capacity-table-0 = <BATTERY_OCV_CURVE_LITHIUM_ION_POLYMER_DEFAULT>;
+		charge-full-design-microamp-hours = <1000000>;
+	};
 };
 
 &flash0 {
@@ -78,7 +105,9 @@
 	pinctrl-names = "default";
 
 	/*
-	 * EXIO0: LCD reset, EXIO1: touch reset, EXIO2: LCD SPI chip select.
+	 * P0: LCD reset, P1: touch reset, P2: LCD SPI chip select,
+	 * P3: SD card chip select, P4: IMU INT1, P5: IMU INT2, P6: RTC INT,
+	 * P7: buzzer. The expander INT output is not connected.
 	 */
 	exio: gpio@20 {
 		compatible = "ti,tca9554";
@@ -94,6 +123,30 @@
 		irq-gpios = <&gpio0 16 GPIO_ACTIVE_HIGH>;
 		reset-gpios = <&exio 1 GPIO_ACTIVE_LOW>;
 	};
+
+	qmi8658: qmi8658@6a {
+		compatible = "qst,qmi8658a";
+		reg = <0x6a>;
+	};
+
+	rtc0: rtc@51 {
+		compatible = "nxp,pcf85063a";
+		reg = <0x51>;
+	};
+};
+
+&adc0 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+
+	channel@3 {
+		reg = <3>;
+		zephyr,gain = "ADC_GAIN_1_4";
+		zephyr,reference = "ADC_REF_INTERNAL";
+		zephyr,acquisition-time = <ADC_ACQ_TIME_DEFAULT>;
+		zephyr,resolution = <12>;
+	};
 };
 
 &ledc0 {
@@ -106,6 +159,27 @@
 	channel0@0 {
 		reg = <0x0>;
 		timer = <0>;
+	};
+};
+
+/* SPI bus shared by the SD card and the LCD panel configuration interface */
+&spi2 {
+	status = "okay";
+	#address-cells = <1>;
+	#size-cells = <0>;
+	pinctrl-0 = <&spim2_default>;
+	pinctrl-names = "default";
+	cs-gpios = <&exio 3 GPIO_ACTIVE_LOW>;
+
+	sdcard0: sdhc@0 {
+		compatible = "zephyr,sdhc-spi-slot";
+		reg = <0>;
+		spi-max-frequency = <DT_FREQ_M(20)>;
+
+		mmc {
+			compatible = "zephyr,sdmmc-disk";
+			disk-name = "SD";
+		};
 	};
 };
 
