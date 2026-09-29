@@ -5,6 +5,8 @@ config ST7701
 	bool "ST7701 display controller driver"
 	default y
 	depends on DT_HAS_SITRONIX_ST7701_ENABLED
-	select MIPI_DSI
+	select MIPI_DSI if $(dt_compat_on_bus,$(DT_COMPAT_SITRONIX_ST7701),mipi-dsi)
+	select MIPI_DBI if $(dt_compat_on_bus,$(DT_COMPAT_SITRONIX_ST7701),mipi-dbi)
 	help
-	  Enable driver for ST7701 display driver.
+	  Enable driver for ST7701 display driver, configured over MIPI DSI or
+	  over a MIPI DBI (serial) interface.

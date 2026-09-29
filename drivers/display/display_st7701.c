@@ -7,12 +7,20 @@
 #define DT_DRV_COMPAT sitronix_st7701
 
 #include <zephyr/kernel.h>
+#include <zephyr/display/mipi_display.h>
 #include <zephyr/drivers/display.h>
-#include <zephyr/drivers/mipi_dsi.h>
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/pm/device.h>
 #include <zephyr/sys/byteorder.h>
 #include <zephyr/logging/log.h>
+
+#if DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dsi)
+#include <zephyr/drivers/mipi_dsi.h>
+#endif
+#if DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dbi)
+#include <zephyr/drivers/mipi_dbi.h>
+#include <zephyr/dt-bindings/display/panel.h>
+#endif
 
 LOG_MODULE_REGISTER(st7701, CONFIG_DISPLAY_LOG_LEVEL);
 
@@ -37,9 +45,11 @@ LOG_MODULE_REGISTER(st7701, CONFIG_DISPLAY_LOG_LEVEL);
 #define DSI_CMD2_BK1_VGLS     0xB5 /* VGL Voltage setting */
 #define DSI_CMD2_BK1_PWCTLR1  0xB7 /* Power Control 1 */
 #define DSI_CMD2_BK1_PWCTLR2  0xB8 /* Power Control 2 */
+#define DSI_CMD2_BK1_C0       0xC0
 #define DSI_CMD2_BK1_SPD1     0xC1 /* Source pre_drive timing set1 */
 #define DSI_CMD2_BK1_SPD2     0xC2 /* Source EQ2 Setting */
 #define DSI_CMD2_BK1_MIPISET1 0xD0 /* MIPI Setting 1 */
+#define DSI_CMD2_BK1_EE       0xEE
 
 #define ST7701_CMD_ID1 0xDA
 #define ST7701_ID      0xFF
@@ -60,8 +70,22 @@ LOG_MODULE_REGISTER(st7701, CONFIG_DISPLAY_LOG_LEVEL);
 /* Adaptive Brightness Control: moving image. */
 #define ST7701_WRCABC_MV  0x03U
 
+struct st7701_bus_api {
+	/* Write a DCS command and its parameters */
+	int (*dcs_write)(const struct device *dev, uint8_t cmd, const void *buf, size_t len);
+	/* Write a buffer holding a command byte followed by its parameters */
+	int (*generic_write)(const struct device *dev, const uint8_t *buf, size_t len);
+	/* Attach to the bus and check the panel before the init sequence */
+	int (*attach)(const struct device *dev);
+};
+
 struct st7701_config {
-	const struct device *mipi_dsi;
+	const struct device *bus;
+	const struct st7701_bus_api *bus_api;
+#if DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dbi)
+	struct mipi_dbi_config dbi_config;
+	uint32_t panel_pixel_format;
+#endif
 	const struct gpio_dt_spec reset;
 	const struct gpio_dt_spec backlight;
 	uint8_t data_lanes;
@@ -97,6 +121,14 @@ struct st7701_config {
 	uint8_t mipiset1;
 	uint8_t b9;
 	bool has_b9;
+	uint8_t bk1_c0;
+	bool has_bk1_c0;
+	uint8_t bk1_ee;
+	bool has_bk1_ee;
+	uint8_t bk3_e6[3];
+	uint8_t bk3_e6_len;
+	uint8_t bk3_e8[3];
+	uint8_t bk3_e8_len;
 	uint8_t gip_e0[4];
 	uint8_t gip_e1[12];
 	uint8_t gip_e2[14];
@@ -135,9 +167,177 @@ struct st7701_data {
 	uint16_t xres;
 	uint16_t yres;
 	uint8_t dsi_pixel_format;
+	/* Interface pixel format (COLMOD) parameter */
+	uint8_t colmod;
 	enum display_pixel_format pixel_format;
 	enum display_orientation orientation;
 };
+
+#if DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dsi)
+static int st7701_dsi_dcs_write(const struct device *dev, uint8_t cmd, const void *buf, size_t len)
+{
+	const struct st7701_config *cfg = dev->config;
+	int ret;
+
+	ret = mipi_dsi_dcs_write(cfg->bus, cfg->channel, cmd, buf, len);
+
+	return ret < 0 ? ret : 0;
+}
+
+static int st7701_dsi_generic_write(const struct device *dev, const uint8_t *buf, size_t len)
+{
+	const struct st7701_config *cfg = dev->config;
+	int ret;
+
+	ret = mipi_dsi_generic_write(cfg->bus, cfg->channel, buf, len);
+
+	return ret < 0 ? ret : 0;
+}
+
+static int st7701_check_id(const struct device *dev)
+{
+	const struct st7701_config *cfg = dev->config;
+	uint32_t id = 0;
+	int ret;
+
+	ret = mipi_dsi_dcs_read(cfg->bus, cfg->channel, ST7701_CMD_ID1, &id, sizeof(id));
+	if (ret == -ENOTSUP || ret == -ENOSYS) {
+		LOG_WRN("MIPI-DSI host does not support DCS read, skipping panel ID check");
+		return 0;
+	}
+	if (ret != sizeof(id)) {
+		LOG_ERR("Read panel ID failed! (%d)", ret);
+		return -EIO;
+	}
+
+	if (id != ST7701_ID) {
+		LOG_ERR("ID 0x%x (should 0x%x)", id, ST7701_ID);
+		return -EINVAL;
+	}
+
+	return 0;
+}
+
+static int st7701_dsi_attach(const struct device *dev)
+{
+	const struct st7701_config *cfg = dev->config;
+	struct st7701_data *data = dev->data;
+	struct mipi_dsi_device mdev;
+	int ret;
+
+	switch (data->dsi_pixel_format) {
+	case MIPI_DSI_PIXFMT_RGB565:
+		data->colmod = MIPI_DCS_PIXEL_FORMAT_16BIT;
+		break;
+	case MIPI_DSI_PIXFMT_RGB888:
+		data->colmod = MIPI_DCS_PIXEL_FORMAT_24BIT;
+		break;
+	default:
+		LOG_ERR("Unsupported pixel format 0x%x!", data->dsi_pixel_format);
+		return -ENOTSUP;
+	}
+
+	/* attach to MIPI-DSI host */
+	mdev.data_lanes = cfg->data_lanes;
+	mdev.pixfmt = data->dsi_pixel_format;
+	mdev.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM;
+
+	mdev.timings.hactive = cfg->width;
+	mdev.timings.hbp = cfg->hbp;
+	mdev.timings.hsync = cfg->hsync;
+	mdev.timings.hfp = cfg->hfp;
+	mdev.timings.vactive = cfg->height;
+	mdev.timings.vbp = cfg->vbp;
+	mdev.timings.vsync = cfg->vsync;
+	mdev.timings.vfp = cfg->vfp;
+
+	ret = mipi_dsi_attach(cfg->bus, cfg->channel, &mdev);
+	if (ret < 0) {
+		LOG_ERR("MIPI-DSI attach failed! (%d)", ret);
+		return ret;
+	}
+
+	ret = st7701_check_id(dev);
+	if (ret) {
+		LOG_ERR("Panel ID check failed! (%d)", ret);
+		return ret;
+	}
+
+	return 0;
+}
+
+static const struct st7701_bus_api st7701_dsi_api = {
+	.dcs_write = st7701_dsi_dcs_write,
+	.generic_write = st7701_dsi_generic_write,
+	.attach = st7701_dsi_attach,
+};
+#endif /* DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dsi) */
+
+#if DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dbi)
+static int st7701_dbi_dcs_write(const struct device *dev, uint8_t cmd, const void *buf, size_t len)
+{
+	const struct st7701_config *cfg = dev->config;
+
+	return mipi_dbi_command_write(cfg->bus, &cfg->dbi_config, cmd, buf, len);
+}
+
+static int st7701_dbi_generic_write(const struct device *dev, const uint8_t *buf, size_t len)
+{
+	const struct st7701_config *cfg = dev->config;
+
+	return mipi_dbi_command_write(cfg->bus, &cfg->dbi_config, buf[0], &buf[1], len - 1U);
+}
+
+/*
+ * The serial interface only configures the controller, the pixel data comes
+ * through its RGB interface. The panel ID is not checked, as the data line of
+ * a 3-wire link is often wired write-only.
+ */
+static int st7701_dbi_attach(const struct device *dev)
+{
+	const struct st7701_config *cfg = dev->config;
+	struct st7701_data *data = dev->data;
+	int ret;
+
+	switch (cfg->panel_pixel_format) {
+	case PANEL_PIXEL_FORMAT_RGB_565:
+		data->colmod = MIPI_DCS_PIXEL_FORMAT_16BIT;
+		data->pixel_format = PIXEL_FORMAT_RGB_565;
+		break;
+	case PANEL_PIXEL_FORMAT_RGB_888:
+		data->colmod = MIPI_DCS_PIXEL_FORMAT_24BIT;
+		data->pixel_format = PIXEL_FORMAT_RGB_888;
+		break;
+	default:
+		LOG_ERR("Unsupported pixel format 0x%x!", cfg->panel_pixel_format);
+		return -ENOTSUP;
+	}
+
+	if (!device_is_ready(cfg->bus)) {
+		LOG_ERR("MIPI-DBI bus is not ready!");
+		return -ENODEV;
+	}
+
+	if (cfg->reset.port == NULL) {
+		ret = mipi_dbi_reset(cfg->bus, 10);
+		if (ret == 0) {
+			/* Wait for the reset to complete */
+			k_msleep(120);
+		} else if (ret != -ENOTSUP) {
+			LOG_ERR("Reset display failed! (%d)", ret);
+			return ret;
+		}
+	}
+
+	return 0;
+}
+
+static const struct st7701_bus_api st7701_dbi_api = {
+	.dcs_write = st7701_dbi_dcs_write,
+	.generic_write = st7701_dbi_generic_write,
+	.attach = st7701_dbi_attach,
+};
+#endif /* DT_ANY_INST_ON_BUS_STATUS_OKAY(mipi_dbi) */
 
 static inline int st7701_dcs_write(const struct device *dev, uint8_t cmd, const void *buf,
 				   size_t len)
@@ -145,7 +345,7 @@ static inline int st7701_dcs_write(const struct device *dev, uint8_t cmd, const 
 	const struct st7701_config *cfg = dev->config;
 	int ret;
 
-	ret = mipi_dsi_dcs_write(cfg->mipi_dsi, cfg->channel, cmd, buf, len);
+	ret = cfg->bus_api->dcs_write(dev, cmd, buf, len);
 	if (ret < 0) {
 		LOG_ERR("DCS 0x%x write failed! (%d)", cmd, ret);
 		return ret;
@@ -160,7 +360,7 @@ static int st7701_short_write_1p(const struct device *dev, uint8_t cmd, uint8_t 
 	int ret;
 	uint8_t buf[] = {cmd, val};
 
-	ret = mipi_dsi_generic_write(cfg->mipi_dsi, cfg->channel, buf, sizeof(buf));
+	ret = cfg->bus_api->generic_write(dev, buf, sizeof(buf));
 	if (ret < 0) {
 		LOG_ERR("Short write failed! (%d)", ret);
 		return ret;
@@ -183,7 +383,7 @@ static void st7701_write_dt_setting(const struct device *dev, const uint8_t *buf
 		return;
 	}
 
-	ret = mipi_dsi_generic_write(cfg->mipi_dsi, cfg->channel, buf, len);
+	ret = cfg->bus_api->generic_write(dev, buf, len);
 	if (ret < 0) {
 		LOG_ERR("Setting 0x%x write failed! (%d)", buf[0], ret);
 	}
@@ -194,34 +394,10 @@ static int st7701_generic_write(const struct device *dev, const void *buf, size_
 	const struct st7701_config *cfg = dev->config;
 	int ret;
 
-	ret = mipi_dsi_generic_write(cfg->mipi_dsi, cfg->channel, buf, len);
+	ret = cfg->bus_api->generic_write(dev, buf, len);
 	if (ret < 0) {
 		LOG_ERR("Generic write failed! (%d)", ret);
 		return ret;
-	}
-
-	return 0;
-}
-
-static int st7701_check_id(const struct device *dev)
-{
-	const struct st7701_config *cfg = dev->config;
-	uint32_t id = 0;
-	int ret;
-
-	ret = mipi_dsi_dcs_read(cfg->mipi_dsi, cfg->channel, ST7701_CMD_ID1, &id, sizeof(id));
-	if (ret == -ENOTSUP || ret == -ENOSYS) {
-		LOG_WRN("MIPI-DSI host does not support DCS read, skipping panel ID check");
-		return 0;
-	}
-	if (ret != sizeof(id)) {
-		LOG_ERR("Read panel ID failed! (%d)", ret);
-		return -EIO;
-	}
-
-	if (id != ST7701_ID) {
-		LOG_ERR("ID 0x%x (should 0x%x)", id, ST7701_ID);
-		return -EINVAL;
 	}
 
 	return 0;
@@ -302,9 +478,15 @@ static int st7701_configure(const struct device *dev)
 	if (cfg->has_b9) {
 		st7701_short_write_1p(dev, 0xB9, cfg->b9);
 	}
+	if (cfg->has_bk1_c0) {
+		st7701_short_write_1p(dev, DSI_CMD2_BK1_C0, cfg->bk1_c0);
+	}
 	st7701_short_write_1p(dev, DSI_CMD2_BK1_SPD1, cfg->spd1);
 	st7701_short_write_1p(dev, DSI_CMD2_BK1_SPD2, cfg->spd2);
 	st7701_short_write_1p(dev, DSI_CMD2_BK1_MIPISET1, cfg->mipiset1);
+	if (cfg->has_bk1_ee) {
+		st7701_short_write_1p(dev, DSI_CMD2_BK1_EE, cfg->bk1_ee);
+	}
 	k_msleep(100);
 
 	/* GIP Setting */
@@ -323,6 +505,15 @@ static int st7701_configure(const struct device *dev)
 	st7701_write_dt_setting(dev, cfg->gip_ed, cfg->gip_ed_len);
 	st7701_write_dt_setting(dev, cfg->gip_ef, cfg->gip_ef_len);
 
+	/* Optional Command2 BK3 settings */
+	if (cfg->bk3_e6_len > 0U || cfg->bk3_e8_len > 0U) {
+		const uint8_t ff3[] = {DSI_CMD2BKX_SEL, 0x77, 0x01, 0x00, 0x00, 0x13};
+
+		st7701_generic_write(dev, ff3, sizeof(ff3));
+		st7701_write_dt_setting(dev, cfg->bk3_e6, cfg->bk3_e6_len);
+		st7701_write_dt_setting(dev, cfg->bk3_e8, cfg->bk3_e8_len);
+	}
+
 	/* Bank1 setting */
 	st7701_generic_write(dev, ff2, sizeof(ff2));
 
@@ -338,18 +529,7 @@ static int st7701_configure(const struct device *dev)
 	k_msleep(120);
 
 	/* Set pixel color format */
-	switch (data->dsi_pixel_format) {
-	case MIPI_DSI_PIXFMT_RGB565:
-		buf[0] = MIPI_DCS_PIXEL_FORMAT_16BIT;
-		break;
-	case MIPI_DSI_PIXFMT_RGB888:
-		buf[0] = MIPI_DCS_PIXEL_FORMAT_24BIT;
-		break;
-	default:
-		LOG_ERR("Unsupported pixel format 0x%x!", data->dsi_pixel_format);
-		return -ENOTSUP;
-	}
-
+	buf[0] = data->colmod;
 	ret = st7701_dcs_write(dev, MIPI_DCS_SET_PIXEL_FORMAT, buf, 1);
 	if (ret < 0) {
 		return ret;
@@ -503,7 +683,6 @@ static int st7701_init(const struct device *dev)
 {
 	const struct st7701_config *cfg = dev->config;
 	struct st7701_data *data = dev->data;
-	struct mipi_dsi_device mdev;
 	int ret;
 
 	if (cfg->reset.port) {
@@ -547,29 +726,8 @@ static int st7701_init(const struct device *dev)
 		data->orientation = DISPLAY_ORIENTATION_ROTATED_270;
 	}
 
-	/* attach to MIPI-DSI host */
-	mdev.data_lanes = cfg->data_lanes;
-	mdev.pixfmt = data->dsi_pixel_format;
-	mdev.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_VIDEO_BURST | MIPI_DSI_MODE_LPM;
-
-	mdev.timings.hactive = cfg->width;
-	mdev.timings.hbp = cfg->hbp;
-	mdev.timings.hsync = cfg->hsync;
-	mdev.timings.hfp = cfg->hfp;
-	mdev.timings.vactive = cfg->height;
-	mdev.timings.vbp = cfg->vbp;
-	mdev.timings.vsync = cfg->vsync;
-	mdev.timings.vfp = cfg->vfp;
-
-	ret = mipi_dsi_attach(cfg->mipi_dsi, cfg->channel, &mdev);
-	if (ret < 0) {
-		LOG_ERR("MIPI-DSI attach failed! (%d)", ret);
-		return ret;
-	}
-
-	ret = st7701_check_id(dev);
+	ret = cfg->bus_api->attach(dev);
 	if (ret) {
-		LOG_ERR("Panel ID check failed! (%d)", ret);
 		return ret;
 	}
 
@@ -593,6 +751,28 @@ static int st7701_init(const struct device *dev)
 	BUILD_ASSERT(DT_INST_PROP_LEN_OR(inst, prop, 0) <=                                         \
 		     sizeof(((struct st7701_config *)0)->field),                                   \
 		     "devicetree property " #prop " is too long for " #field)
+
+#define ST7701_DSI_CONFIG(inst)                                                                    \
+	.bus_api = &st7701_dsi_api,                                                                \
+	.data_lanes = DT_INST_PROP_BY_IDX(inst, data_lanes, 0),                                    \
+	.channel = DT_INST_REG_ADDR(inst),                                                         \
+	.hbp = DT_PROP(DT_INST_CHILD(inst, display_timings), hback_porch),                         \
+	.hsync = DT_PROP(DT_INST_CHILD(inst, display_timings), hsync_len),                         \
+	.hfp = DT_PROP(DT_INST_CHILD(inst, display_timings), hfront_porch),                        \
+	.vbp = DT_PROP(DT_INST_CHILD(inst, display_timings), vback_porch),                         \
+	.vsync = DT_PROP(DT_INST_CHILD(inst, display_timings), vsync_len),                         \
+	.vfp = DT_PROP(DT_INST_CHILD(inst, display_timings), vfront_porch),
+
+#define ST7701_DBI_CONFIG(inst)                                                                    \
+	.bus_api = &st7701_dbi_api,                                                                \
+	.dbi_config = MIPI_DBI_CONFIG_DT_INST(                                                     \
+		inst,                                                                              \
+		SPI_OP_MODE_CONTROLLER |                                                           \
+			((DT_INST_STRING_UPPER_TOKEN(inst, mipi_mode) == MIPI_DBI_MODE_SPI_4WIRE)  \
+				 ? SPI_WORD_SET(8)                                                 \
+				 : SPI_WORD_SET(9)),                                               \
+		0),                                                                                \
+	.panel_pixel_format = DT_INST_PROP(inst, pixel_format),
 
 #define ST7701_DEVICE(inst)                                                                        \
 	BUILD_ASSERT((DT_INST_PROP(inst, height) % 2) == 0,                                        \
@@ -618,21 +798,17 @@ static int st7701_init(const struct device *dev)
 	ST7701_ASSERT_LEN(inst, gip_ef, gip_ef);                                                   \
 	ST7701_ASSERT_LEN(inst, pvgamctrl, pvgamctrl);                                             \
 	ST7701_ASSERT_LEN(inst, nvgamctrl, nvgamctrl);                                             \
+	ST7701_ASSERT_LEN(inst, bk3_e6, bk3_e6);                                                   \
+	ST7701_ASSERT_LEN(inst, bk3_e8, bk3_e8);                                                   \
 	static const struct st7701_config st7701_config_##inst = {                                 \
-		.mipi_dsi = DEVICE_DT_GET(DT_INST_BUS(inst)),                                      \
+		.bus = DEVICE_DT_GET(DT_INST_BUS(inst)),                                           \
+		COND_CODE_1(DT_INST_ON_BUS(inst, mipi_dbi), (ST7701_DBI_CONFIG(inst)),             \
+			    (ST7701_DSI_CONFIG(inst)))                                             \
 		.reset = GPIO_DT_SPEC_INST_GET_OR(inst, reset_gpios, {0}),                         \
 		.backlight = GPIO_DT_SPEC_INST_GET_OR(inst, bl_gpios, {0}),                        \
-		.data_lanes = DT_INST_PROP_BY_IDX(inst, data_lanes, 0),                            \
 		.width = DT_INST_PROP(inst, width),                                                \
 		.height = DT_INST_PROP(inst, height),                                              \
-		.channel = DT_INST_REG_ADDR(inst),                                                 \
 		.rotation = DT_INST_PROP(inst, rotation),                                          \
-		.hbp = DT_PROP(DT_INST_CHILD(inst, display_timings), hback_porch),                 \
-		.hsync = DT_PROP(DT_INST_CHILD(inst, display_timings), hsync_len),                 \
-		.hfp = DT_PROP(DT_INST_CHILD(inst, display_timings), hfront_porch),                \
-		.vbp = DT_PROP(DT_INST_CHILD(inst, display_timings), vback_porch),                 \
-		.vsync = DT_PROP(DT_INST_CHILD(inst, display_timings), vsync_len),                 \
-		.vfp = DT_PROP(DT_INST_CHILD(inst, display_timings), vfront_porch),                \
 		.inversion_on = DT_INST_PROP(inst, inversion_on),                                  \
 		.bk3_ef = DT_INST_PROP_OR(inst, bk3_ef, {}),                                       \
 		.bk3_ef_len = DT_INST_PROP_LEN_OR(inst, bk3_ef, 0),                                \
@@ -655,6 +831,14 @@ static int st7701_init(const struct device *dev)
 		.mipiset1 = DT_INST_PROP(inst, mipiset1),                                          \
 		.b9 = DT_INST_PROP_OR(inst, b9, 0),                                                \
 		.has_b9 = DT_INST_NODE_HAS_PROP(inst, b9),                                         \
+		.bk1_c0 = DT_INST_PROP_OR(inst, bk1_c0, 0),                                        \
+		.has_bk1_c0 = DT_INST_NODE_HAS_PROP(inst, bk1_c0),                                 \
+		.bk1_ee = DT_INST_PROP_OR(inst, bk1_ee, 0),                                        \
+		.has_bk1_ee = DT_INST_NODE_HAS_PROP(inst, bk1_ee),                                 \
+		.bk3_e6 = DT_INST_PROP_OR(inst, bk3_e6, {}),                                       \
+		.bk3_e6_len = DT_INST_PROP_LEN_OR(inst, bk3_e6, 0),                                \
+		.bk3_e8 = DT_INST_PROP_OR(inst, bk3_e8, {}),                                       \
+		.bk3_e8_len = DT_INST_PROP_LEN_OR(inst, bk3_e8, 0),                                \
 		.gip_e0 = DT_INST_PROP_OR(inst, gip_e0, {}),                                       \
 		.gip_e1 = DT_INST_PROP_OR(inst, gip_e1, {}),                                       \
 		.gip_e2 = DT_INST_PROP_OR(inst, gip_e2, {}),                                       \
@@ -689,7 +873,8 @@ static int st7701_init(const struct device *dev)
 		.nvgamctrl_len = DT_INST_PROP_LEN_OR(inst, nvgamctrl, 0),                          \
 	};                                                                                         \
 	static struct st7701_data st7701_data_##inst = {                                           \
-		.dsi_pixel_format = DT_INST_PROP(inst, pixel_format),                              \
+		IF_ENABLED(DT_INST_ON_BUS(inst, mipi_dsi),                                         \
+			   (.dsi_pixel_format = DT_INST_PROP(inst, pixel_format),))                \
 	};                                                                                         \
 	PM_DEVICE_DT_INST_DEFINE(inst, st7701_pm_action);                                          \
 	DEVICE_DT_INST_DEFINE(inst, &st7701_init, PM_DEVICE_DT_INST_GET(inst), &st7701_data_##inst,\

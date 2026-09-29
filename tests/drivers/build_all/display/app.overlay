@@ -549,6 +549,20 @@
 				bias = <3>;
 				mipi-mode = "MIPI_DBI_MODE_SPI_4WIRE";
 			};
+
+			test_mipi_dbi_st7701: st7701@2b {
+				compatible = "sitronix,st7701";
+				reg = <0x2b>;
+				mipi-max-frequency = <2000000>;
+				mipi-mode = "MIPI_DBI_MODE_SPI_3WIRE";
+				width = <480>;
+				height = <640>;
+				pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+				bk1-c0 = <0x09>;
+				bk1-ee = <0x42>;
+				bk3-e6 = [e6 16 7c];
+				bk3-e8 = [e8 00 0e];
+			};
 		};
 
 		test_mipi_dbi_xfr_16bit_write_only {

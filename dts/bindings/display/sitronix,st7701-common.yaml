@@ -1,15 +1,9 @@
 # Copyright (c) 2025 Arduino SA
 # SPDX-License-Identifier: Apache-2.0
 
-title: Sitronix ST7701 display controller
+# Common properties of the Sitronix ST7701 display controller
 
-description: |
-    The Sitronix ST7701 is a 16.7M colors TFT-LCD controller
-    with a maximum 480RGBx864 resolution.
-
-compatible: "sitronix,st7701"
-
-include: [mipi-dsi-device.yaml, display-controller.yaml]
+include: display-controller.yaml
 
 properties:
   reset-gpios:
@@ -122,6 +116,30 @@ properties:
     type: int
     description: |
       Command2 BK1 setting at address 0xB9. Written only when present.
+
+  bk1-c0:
+    type: int
+    description: |
+      Command2 BK1 setting at address 0xC0. Written only when present.
+
+  bk1-ee:
+    type: int
+    description: |
+      Command2 BK1 setting at address 0xEE. Written only when present.
+
+  bk3-e6:
+    type: uint8-array
+    description: |
+      Command2 BK3 setting at address 0xE6, including the command byte.
+      Written (preceded by the BK3 selection) after the GIP settings when
+      present.
+
+  bk3-e8:
+    type: uint8-array
+    description: |
+      Command2 BK3 setting at address 0xE8, including the command byte.
+      Written (preceded by the BK3 selection) after the GIP settings when
+      present.
 
   gip-e0:
     type: uint8-array
