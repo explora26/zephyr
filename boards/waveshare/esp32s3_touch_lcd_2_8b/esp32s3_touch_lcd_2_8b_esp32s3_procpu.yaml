@@ -12,7 +12,6 @@ supported:
   - input
   - pwm
   - rtc
-  - sdhc
   - sensor
   - spi
   - uart

@@ -3,7 +3,7 @@
 
 if BOARD_ESP32S3_TOUCH_LCD_2_8B_ESP32S3_PROCPU
 
-# The SD card chip select is on the TCA9554 I/O expander, which must be
+# The LCD chip select is on the TCA9554 I/O expander, which must be
 # initialized before the SPI controller configures its chip selects.
 config SPI_INIT_PRIORITY
 	default 75 if SPI

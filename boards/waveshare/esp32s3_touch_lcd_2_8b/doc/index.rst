@@ -4,10 +4,10 @@ Overview
 ********
 
 The `ESP32-S3-Touch-LCD-2.8B`_ is an ESP32-S3 development board from Waveshare with a 2.8-inch
-480x640 IPS RGB LCD, capacitive touch panel, IMU, RTC, microSD card slot and Li-Po battery
-charger.
+480x640 IPS RGB LCD, capacitive touch panel, IMU, RTC and Li-Po battery charger.
 
-The schematic can be found in the `ESP32-S3-Touch-LCD-2.8B Schematic`_ reference.
+The schematic can be found in the `ESP32-S3-Touch-LCD-2.8B Schematic`_ reference. It shows a
+microSD card slot, which is not fitted on the board.
 
 Hardware
 ********
@@ -18,7 +18,6 @@ Hardware
 - TCA9554 I2C I/O expander for reset, chip select and interrupt lines
 - QMI8658C 6-axis IMU
 - PCF85063A RTC
-- microSD card slot (SPI mode, shared with the LCD configuration interface)
 - Li-Po battery charger with battery voltage measurement
 - Buzzer
 - BOOT and RESET buttons
@@ -31,7 +30,7 @@ Pin mapping:
 +========================+=========================================+
 | I2C SDA / SCL          | GPIO15 / GPIO7                          |
 +------------------------+-----------------------------------------+
-| SPI SCK / MOSI / MISO  | GPIO2 / GPIO1 / GPIO42                  |
+| LCD SPI SCK / SDA      | GPIO2 / GPIO1                           |
 +------------------------+-----------------------------------------+
 | Battery voltage (ADC)  | GPIO4 (ADC1 channel 3, 1/3 divider)     |
 +------------------------+-----------------------------------------+
@@ -69,7 +68,7 @@ TCA9554 I/O expander pins:
 +------+------------------------+
 | P2   | LCD SPI chip select    |
 +------+------------------------+
-| P3   | SD card chip select    |
+| P3   | Not used               |
 +------+------------------------+
 | P4   | IMU INT1               |
 +------+------------------------+
@@ -93,8 +92,8 @@ Supported Features
 
 The LCD is driven by the LCD_CAM RGB interface (``lcd_cam_rgb``), which streams a framebuffer in
 PSRAM to the panel and is the ``zephyr,display`` device. The ST7701S panel controller is
-configured once at boot over 3-wire SPI, on the SPI bus shared with the microSD card. The LCD
-backlight is available as the ``pwm-lcd0`` PWM LED and is not switched on by the display driver.
+configured once at boot over 3-wire SPI. The LCD backlight is available as the ``pwm-lcd0`` PWM
+LED and is switched fully on at boot when the display is enabled.
 
 Battery state-of-charge estimation is provided by the ``fuel_gauge`` node, which is disabled by
 default. Enable it in an overlay and adapt ``charge-full-design-microamp-hours`` to the battery.

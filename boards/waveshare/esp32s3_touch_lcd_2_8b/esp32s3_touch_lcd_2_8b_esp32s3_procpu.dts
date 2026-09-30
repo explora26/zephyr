@@ -26,7 +26,6 @@
 		pwm-0 = &ledc0;
 		pwm-lcd0 = &pwm_lcd0;
 		rtc = &rtc0;
-		sdhc0 = &sdcard0;
 		sw0 = &button0;
 		uart-0 = &uart0;
 		watchdog0 = &wdt0;
@@ -92,9 +91,9 @@
 		#address-cells = <1>;
 		#size-cells = <0>;
 
-		st7701: st7701@1 {
+		st7701: st7701@0 {
 			compatible = "sitronix,st7701";
-			reg = <1>;
+			reg = <0>;
 			mipi-max-frequency = <DT_FREQ_M(2)>;
 			mipi-mode = "MIPI_DBI_MODE_SPI_3WIRE";
 			width = <480>;
@@ -160,9 +159,10 @@
 	pinctrl-names = "default";
 
 	/*
-	 * P0: LCD reset, P1: touch reset, P2: LCD SPI chip select,
-	 * P3: SD card chip select, P4: IMU INT1, P5: IMU INT2, P6: RTC INT,
-	 * P7: buzzer. The expander INT output is not connected.
+	 * P0: LCD reset, P1: touch reset, P2: LCD SPI chip select, P3: unused
+	 * (SD card chip select on the schematic, the slot is not fitted),
+	 * P4: IMU INT1, P5: IMU INT2, P6: RTC INT, P7: buzzer. The expander INT
+	 * output is not connected.
 	 */
 	exio: gpio@20 {
 		compatible = "ti,tca9554";
@@ -249,25 +249,14 @@
 	};
 };
 
-/* SPI bus shared by the SD card and the LCD panel configuration interface */
+/* LCD panel configuration interface */
 &spi2 {
 	status = "okay";
 	#address-cells = <1>;
 	#size-cells = <0>;
 	pinctrl-0 = <&spim2_default>;
 	pinctrl-names = "default";
-	cs-gpios = <&exio 3 GPIO_ACTIVE_LOW>, <&exio 2 GPIO_ACTIVE_LOW>;
-
-	sdcard0: sdhc@0 {
-		compatible = "zephyr,sdhc-spi-slot";
-		reg = <0>;
-		spi-max-frequency = <DT_FREQ_M(20)>;
-
-		mmc {
-			compatible = "zephyr,sdmmc-disk";
-			disk-name = "SD";
-		};
-	};
+	cs-gpios = <&exio 2 GPIO_ACTIVE_LOW>;
 };
 
 &uart0 {
