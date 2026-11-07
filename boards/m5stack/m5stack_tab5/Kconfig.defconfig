@@ -3,8 +3,21 @@
 
 if BOARD_M5STACK_TAB5_ESP32P4_HPCORE
 
-# MCUboot builds without I2C, which the I/O expander driver selects.
+# MCUboot builds without I2C, which the I/O expander driver selects. The
+# display power hogs sit on that expander, so they are left out as well.
 configdefault GPIO_PI4IOE5V6408
 	default n if MCUBOOT
+
+configdefault GPIO_HOGS
+	default n if MCUBOOT
+
+# The display power hogs sit on the I2C I/O expander, which initializes at
+# GPIO_PI4IOE5V6408_INIT_PRIORITY (70), and must be applied before the panel.
+configdefault GPIO_HOGS_INIT_PRIORITY
+	default 71
+
+# Two 720x1280 RGB565 framebuffers take 3.5 MiB of PSRAM.
+configdefault ESP_SPIRAM_HEAP_SIZE
+	default 5242880 if DISPLAY_ESP32_DSI
 
 endif # BOARD_M5STACK_TAB5_ESP32P4_HPCORE

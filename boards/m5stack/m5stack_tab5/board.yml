@@ -2,5 +2,12 @@ board:
   name: m5stack_tab5
   full_name: Tab5
   vendor: m5stack
+  revision:
+    format: number
+    default: "3"
+    revisions:
+      - name: "1"
+      - name: "2"
+      - name: "3"
   socs:
     - name: esp32p4

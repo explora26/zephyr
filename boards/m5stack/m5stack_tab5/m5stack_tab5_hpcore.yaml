@@ -10,6 +10,7 @@ testing:
     - heap
 supported:
   - counter
+  - display
   - entropy
   - gpio
   - hwinfo

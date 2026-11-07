@@ -1,0 +1,87 @@
+/*
+ * SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Board revision 3: Sitronix ST7121 display with integrated touch controller */
+
+#include <zephyr/dt-bindings/display/panel.h>
+#include <zephyr/dt-bindings/mipi_dsi/mipi_dsi.h>
+
+/ {
+	chosen {
+		zephyr,display = &dsi_display;
+		zephyr,touch = &st7123_touch;
+	};
+};
+
+&io_expander0 {
+	lcd-enable-hog {
+		gpio-hog;
+		gpios = <4 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+
+	touch-enable-hog {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
+&i2c0 {
+	st7123_touch: touch-controller@55 {
+		compatible = "sitronix,st7123-touch";
+		reg = <0x55>;
+		int-gpios = <&gpio0 23 GPIO_ACTIVE_LOW>;
+		screen-width = <720>;
+		screen-height = <1280>;
+	};
+};
+
+/* LDO_VO3 supplies the MIPI D-PHY. */
+&ldo {
+	ldo3@3 {
+		regulator-init-microvolt = <2500000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+};
+
+&mipi_dsi {
+	data-lanes = <2>;
+	phy-clock = <965000000>;
+	dpi-clock-frequency = <70000000>;
+	status = "okay";
+
+	st7121: panel-controller@0 {
+		compatible = "sitronix,st7121";
+		reg = <0>;
+		data-lanes = <2>;
+		pixel-format = <MIPI_DSI_PIXFMT_RGB565>;
+		width = <720>;
+		height = <1280>;
+		bl-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+
+		display-timings {
+			compatible = "zephyr,panel-timing";
+			hsync-len = <2>;
+			hback-porch = <40>;
+			hfront-porch = <40>;
+			vsync-len = <20>;
+			vback-porch = <24>;
+			vfront-porch = <200>;
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <1>;
+			pixelclk-active = <0>;
+		};
+	};
+};
+
+&dsi_display {
+	pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+	width = <720>;
+	height = <1280>;
+	status = "okay";
+};

@@ -16,8 +16,8 @@ Hardware
 ********
 
 - ESP32-P4 SoC (pre-v3 silicon) with 32 MB PSRAM and 16 MB NOR flash
-- 5-inch 1280x720 IPS display over 2-lane MIPI DSI, with a GT911 (ILI9881C panel)
-  or ST7123 (integrated) touch controller depending on the hardware revision
+- 5-inch 720x1280 IPS display over 2-lane MIPI DSI; the display controller and touch
+  controller depend on the board revision (see `Board Revisions`_)
 - SC2356 2 MP camera over MIPI CSI
 - ES8388 audio codec and ES7210 microphone ADC on I2S0 (MCLK=GPIO30, BCLK=GPIO27,
   WS=GPIO29, DOUT=GPIO26, DIN=GPIO28)
@@ -34,8 +34,42 @@ Hardware
 The internal I2C bus (I2C0, SDA=GPIO31, SCL=GPIO32) carries the I/O expanders, the
 IMU, the RTC, the audio codecs and the touch controller.
 
-The display, touch controller, camera, audio and the ESP32-C6 wireless co-processor are
-not enabled in this board definition.
+The camera, audio and the ESP32-C6 wireless co-processor are not enabled in this board
+definition.
+
+Board Revisions
+===============
+
+M5Stack has shipped the Tab5 with three display assemblies. They are described as board
+revisions:
+
+.. list-table::
+   :header-rows: 1
+
+   * - Revision
+     - Display controller
+     - Touch controller
+     - Zephyr support
+   * - ``1``
+     - Ilitek ILI9881C
+     - Goodix GT911 (I2C 0x14)
+     - Display and touch not enabled
+   * - ``2``
+     - Sitronix ST7123
+     - Integrated in ST7123 (I2C 0x55)
+     - Display and touch not enabled
+   * - ``3`` (default)
+     - Sitronix ST7121
+     - Integrated in ST7121 (I2C 0x55)
+     - Display and touch
+
+Select the revision with the board target, for example ``m5stack_tab5@1/esp32p4/hpcore``.
+The ESP-IDF board support package reports the revision at boot as ``board version``.
+
+On revision 3 the display runs in RGB565 over two data lanes at 965 Mbit/s per lane, with
+the backlight on GPIO22 and the touch interrupt on GPIO23. The panel and touch supplies
+are switched on by I/O expander 0x43 pins 4 and 5, and LDO_VO3 supplies the MIPI D-PHY
+at 2.5 V.
 
 .. include:: ../../../espressif/common/soc-esp32p4-features.rst
    :start-after: espressif-soc-esp32p4-features
