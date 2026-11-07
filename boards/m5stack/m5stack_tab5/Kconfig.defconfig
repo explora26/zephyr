@@ -1,0 +1,10 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+if BOARD_M5STACK_TAB5_ESP32P4_HPCORE
+
+# MCUboot builds without I2C, which the I/O expander driver selects.
+configdefault GPIO_PI4IOE5V6408
+	default n if MCUBOOT
+
+endif # BOARD_M5STACK_TAB5_ESP32P4_HPCORE
