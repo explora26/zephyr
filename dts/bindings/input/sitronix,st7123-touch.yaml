@@ -1,0 +1,24 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+title: Sitronix ST7123 touch controller
+
+description: |
+  Touch controller integrated in the Sitronix ST7121 and ST7123 TDDI display
+  drivers. It is accessed over I2C with 16-bit register addresses.
+
+compatible: "sitronix,st7123-touch"
+
+include: [i2c-device.yaml, touchscreen-common.yaml]
+
+properties:
+  int-gpios:
+    type: phandle-array
+    description: |
+      Interrupt GPIO. The controller drives it to signal that touch data is
+      available. Active low. Without it the controller is polled.
+
+  reset-gpios:
+    type: phandle-array
+    description: |
+      Reset GPIO (active low).

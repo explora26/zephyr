@@ -1,0 +1,31 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+menuconfig INPUT_ST7123
+	bool "Sitronix ST7123 touch controller driver"
+	default y
+	depends on DT_HAS_SITRONIX_ST7123_TOUCH_ENABLED
+	select I2C
+	select INPUT_TOUCH
+	help
+	  Enable driver for the touch controller integrated in the Sitronix
+	  ST7121 and ST7123 TDDI display drivers.
+
+if INPUT_ST7123
+
+config INPUT_ST7123_INTERRUPT
+	bool "Interrupt"
+	default y if $(dt_compat_any_has_prop,$(DT_COMPAT_SITRONIX_ST7123_TOUCH),int-gpios)
+	select GPIO
+	help
+	  Read touch data when the controller asserts its interrupt line
+	  instead of polling it.
+
+config INPUT_ST7123_PERIOD_MS
+	int "Sample period"
+	depends on !INPUT_ST7123_INTERRUPT
+	default 20
+	help
+	  Sample period in milliseconds when in polling mode.
+
+endif # INPUT_ST7123
