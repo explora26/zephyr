@@ -4,8 +4,6 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#define DT_DRV_COMPAT sitronix_st7121
-
 #include <string.h>
 
 #include <zephyr/display/mipi_display.h>
@@ -43,8 +41,8 @@ struct st7121_init_cmd {
 		.data = NULL,                                                                      \
 	}
 
-/* Panel initialization sequence of the M5Stack Tab5 720x1280 panel */
-static const struct st7121_init_cmd st7121_init_cmds[] = {
+/* ST7121 initialization sequence of the M5Stack Tab5 720x1280 panel */
+static const struct st7121_init_cmd st7121_init_cmds[] __maybe_unused = {
 	ST7121_CMD(0x60, 0, 0x71, 0x21, 0xA2),
 	ST7121_CMD(0x60, 0, 0x71, 0x21, 0xA3),
 	ST7121_CMD(0x60, 0, 0x71, 0x21, 0xA4),
@@ -104,7 +102,65 @@ static const struct st7121_init_cmd st7121_init_cmds[] = {
 	ST7121_CMD(MIPI_DCS_SET_ADDRESS_MODE, 0, 0x00),
 };
 
+/* ST7123 initialization sequence of the M5Stack Tab5 720x1280 panel */
+static const struct st7121_init_cmd st7123_init_cmds[] __maybe_unused = {
+	ST7121_CMD(0x60, 0, 0x71, 0x23, 0xA2),
+	ST7121_CMD(0x60, 0, 0x71, 0x23, 0xA3),
+	ST7121_CMD(0x60, 0, 0x71, 0x23, 0xA4),
+	ST7121_CMD(0xA4, 0, 0x31),
+	ST7121_CMD(0xD7, 0, 0x10, 0x0A, 0x10, 0x2A, 0x80, 0x80),
+	ST7121_CMD(0x90, 0, 0x71, 0x23, 0x5A, 0x20, 0x24, 0x09, 0x09),
+	ST7121_CMD(0xA3, 0, 0x80, 0x01, 0x88, 0x30, 0x05, 0x00, 0x00, 0x00, 0x00, 0x00, 0x46,
+		   0x00, 0x00, 0x1E, 0x5C, 0x1E, 0x80, 0x00, 0x4F, 0x05, 0x00, 0x00, 0x00, 0x00,
+		   0x00, 0x46, 0x00, 0x00, 0x1E, 0x5C, 0x1E, 0x80, 0x00, 0x6F, 0x58, 0x00, 0x00,
+		   0x00, 0xFF),
+	ST7121_CMD(0xA6, 0, 0x03, 0x00, 0x24, 0x55, 0x36, 0x00, 0x39, 0x00, 0x6E, 0x6E, 0x91,
+		   0xFF, 0x00, 0x24, 0x55, 0x38, 0x00, 0x37, 0x00, 0x6E, 0x6E, 0x91, 0xFF, 0x00,
+		   0x24, 0x11, 0x00, 0x00, 0x00, 0x00, 0x6E, 0x6E, 0x91, 0xFF, 0x00, 0xEC, 0x11,
+		   0x00, 0x03, 0x00, 0x03, 0x6E, 0x6E, 0xFF, 0xFF, 0x00, 0x08, 0x80, 0x08, 0x80,
+		   0x06, 0x00, 0x00, 0x00, 0x00),
+	ST7121_CMD(0xA7, 0, 0x19, 0x19, 0x80, 0x64, 0x40, 0x07, 0x16, 0x40, 0x00, 0x44, 0x03,
+		   0x6E, 0x6E, 0x91, 0xFF, 0x08, 0x80, 0x64, 0x40, 0x25, 0x34, 0x40, 0x00, 0x02,
+		   0x01, 0x6E, 0x6E, 0x91, 0xFF, 0x08, 0x80, 0x64, 0x40, 0x00, 0x00, 0x40, 0x00,
+		   0x00, 0x00, 0x6E, 0x6E, 0x91, 0xFF, 0x08, 0x80, 0x64, 0x40, 0x00, 0x00, 0x00,
+		   0x00, 0x20, 0x00, 0x6E, 0x6E, 0x84, 0xFF, 0x08, 0x80, 0x44),
+	ST7121_CMD(0xAC, 0, 0x03, 0x19, 0x19, 0x18, 0x18, 0x06, 0x13, 0x13, 0x11, 0x11, 0x08,
+		   0x08, 0x0A, 0x0A, 0x1C, 0x1C, 0x07, 0x07, 0x00, 0x00, 0x02, 0x02, 0x01, 0x19,
+		   0x19, 0x18, 0x18, 0x06, 0x12, 0x12, 0x10, 0x10, 0x09, 0x09, 0x0B, 0x0B, 0x1C,
+		   0x1C, 0x07, 0x07, 0x03, 0x03, 0x01, 0x01),
+	ST7121_CMD(0xAD, 0, 0xF0, 0x00, 0x46, 0x00, 0x03, 0x50, 0x50, 0xFF, 0xFF, 0xF0, 0x40,
+		   0x06, 0x01, 0x07, 0x42, 0x42, 0xFF, 0xFF, 0x01, 0x00, 0x00, 0xFF, 0xFF, 0xFF,
+		   0xFF),
+	ST7121_CMD(0xAE, 0, 0xFE, 0x3F, 0x3F, 0xFE, 0x3F, 0x3F, 0x00),
+	ST7121_CMD(0xB2, 0, 0x15, 0x19, 0x05, 0x23, 0x49, 0xAF, 0x03, 0x2E, 0x5C, 0xD2, 0xFF,
+		   0x10, 0x20, 0xFD, 0x20, 0xC0, 0x00),
+	ST7121_CMD(0xE8, 0, 0x20, 0x6F, 0x04, 0x97, 0x97, 0x3E, 0x04, 0xDC, 0xDC, 0x3E, 0x06,
+		   0xFA, 0x26, 0x3E),
+	ST7121_CMD(0x75, 0, 0x03, 0x04),
+	ST7121_CMD(0xE7, 0, 0x3B, 0x00, 0x00, 0x7C, 0xA1, 0x8C, 0x20, 0x1A, 0xF0, 0xB1, 0x50,
+		   0x00, 0x50, 0xB1, 0x50, 0xB1, 0x50, 0xD8, 0x00, 0x55, 0x00, 0xB1, 0x00, 0x45,
+		   0xC9, 0x6A, 0xFF, 0x5A, 0xD8, 0x18, 0x88, 0x15, 0xB1, 0x01, 0x01, 0x77),
+	ST7121_CMD(0xEA, 0, 0x13, 0x00, 0x04, 0x00, 0x00, 0x00, 0x00, 0x2C),
+	ST7121_CMD(0xB0, 0, 0x22, 0x43, 0x11, 0x61, 0x25, 0x43, 0x43),
+	ST7121_CMD(0xB7, 0, 0x00, 0x00, 0x73, 0x73),
+	ST7121_CMD(0xBF, 0, 0xA6, 0xAA),
+	ST7121_CMD(0xA9, 0, 0x00, 0x00, 0x73, 0xFF, 0x00, 0x00, 0x03, 0x00, 0x00, 0x03),
+	ST7121_CMD(0xC8, 0, 0x00, 0x00, 0x10, 0x1F, 0x36, 0x00, 0x5D, 0x04, 0x9D, 0x05, 0x10,
+		   0xF2, 0x06, 0x60, 0x03, 0x11, 0xAD, 0x00, 0xEF, 0x01, 0x22, 0x2E, 0x0E, 0x74,
+		   0x08, 0x32, 0xDC, 0x09, 0x33, 0x0F, 0xF3, 0x77, 0x0D, 0xB0, 0xDC, 0x03, 0xFF),
+	ST7121_CMD(0xC9, 0, 0x00, 0x00, 0x10, 0x1F, 0x36, 0x00, 0x5D, 0x04, 0x9D, 0x05, 0x10,
+		   0xF2, 0x06, 0x60, 0x03, 0x11, 0xAD, 0x00, 0xEF, 0x01, 0x22, 0x2E, 0x0E, 0x74,
+		   0x08, 0x32, 0xDC, 0x09, 0x33, 0x0F, 0xF3, 0x77, 0x0D, 0xB0, 0xDC, 0x03, 0xFF),
+	ST7121_CMD_NO_DATA(MIPI_DCS_EXIT_SLEEP_MODE, 120),
+	ST7121_CMD_NO_DATA(MIPI_DCS_SET_DISPLAY_ON, 50),
+	ST7121_CMD(MIPI_DCS_SET_TEAR_ON, 0, 0x00),
+	ST7121_CMD_NO_DATA(MIPI_DCS_EXIT_INVERT_MODE, 0),
+	ST7121_CMD(MIPI_DCS_SET_ADDRESS_MODE, 0, 0x00),
+};
+
 struct st7121_config {
+	const struct st7121_init_cmd *init_cmds;
+	size_t num_init_cmds;
 	const struct device *mipi_dsi;
 	struct gpio_dt_spec reset_gpio;
 	struct gpio_dt_spec bl_gpio;
@@ -251,8 +307,8 @@ static int st7121_init(const struct device *dev)
 		return (int)ret;
 	}
 
-	for (size_t i = 0; i < ARRAY_SIZE(st7121_init_cmds); i++) {
-		const struct st7121_init_cmd *c = &st7121_init_cmds[i];
+	for (size_t i = 0; i < config->num_init_cmds; i++) {
+		const struct st7121_init_cmd *c = &config->init_cmds[i];
 
 		ret = mipi_dsi_dcs_write(config->mipi_dsi, config->channel, c->cmd, c->data,
 					 c->len);
@@ -284,28 +340,34 @@ static int st7121_init(const struct device *dev)
 	return 0;
 }
 
-#define ST7121_TIMING(inst, prop) DT_PROP(DT_INST_CHILD(inst, display_timings), prop)
+#define ST7121_TIMING(node_id, prop) DT_PROP(DT_CHILD(node_id, display_timings), prop)
 
-#define ST7121_DEFINE(inst)                                                                        \
-	BUILD_ASSERT(DT_INST_PROP_BY_IDX(inst, data_lanes, 0) == 2,                               \
-		     "The ST7121 initialization sequence configures two data lanes");              \
-	static const struct st7121_config st7121_config_##inst = {                                \
-		.mipi_dsi = DEVICE_DT_GET(DT_INST_BUS(inst)),                                      \
-		.reset_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, reset_gpios, {0}),                    \
-		.bl_gpio = GPIO_DT_SPEC_INST_GET_OR(inst, bl_gpios, {0}),                          \
-		.data_lanes = DT_INST_PROP_BY_IDX(inst, data_lanes, 0),                            \
-		.pixel_format = DT_INST_PROP(inst, pixel_format),                                  \
-		.width = DT_INST_PROP(inst, width),                                                \
-		.height = DT_INST_PROP(inst, height),                                              \
-		.channel = DT_INST_REG_ADDR(inst),                                                 \
-		.hbp = ST7121_TIMING(inst, hback_porch),                                           \
-		.hsync = ST7121_TIMING(inst, hsync_len),                                           \
-		.hfp = ST7121_TIMING(inst, hfront_porch),                                          \
-		.vbp = ST7121_TIMING(inst, vback_porch),                                           \
-		.vsync = ST7121_TIMING(inst, vsync_len),                                           \
-		.vfp = ST7121_TIMING(inst, vfront_porch),                                          \
+#define ST7121_DEFINE(node_id, cmds)                                                               \
+	BUILD_ASSERT(DT_PROP_BY_IDX(node_id, data_lanes, 0) == 2,                                 \
+		     "The initialization sequence configures two data lanes");                     \
+	static const struct st7121_config st7121_config_##node_id = {                             \
+		.init_cmds = cmds,                                                                 \
+		.num_init_cmds = ARRAY_SIZE(cmds),                                                 \
+		.mipi_dsi = DEVICE_DT_GET(DT_BUS(node_id)),                                        \
+		.reset_gpio = GPIO_DT_SPEC_GET_OR(node_id, reset_gpios, {0}),                      \
+		.bl_gpio = GPIO_DT_SPEC_GET_OR(node_id, bl_gpios, {0}),                            \
+		.data_lanes = DT_PROP_BY_IDX(node_id, data_lanes, 0),                              \
+		.pixel_format = DT_PROP(node_id, pixel_format),                                    \
+		.width = DT_PROP(node_id, width),                                                  \
+		.height = DT_PROP(node_id, height),                                                \
+		.channel = DT_REG_ADDR(node_id),                                                   \
+		.hbp = ST7121_TIMING(node_id, hback_porch),                                        \
+		.hsync = ST7121_TIMING(node_id, hsync_len),                                        \
+		.hfp = ST7121_TIMING(node_id, hfront_porch),                                       \
+		.vbp = ST7121_TIMING(node_id, vback_porch),                                        \
+		.vsync = ST7121_TIMING(node_id, vsync_len),                                        \
+		.vfp = ST7121_TIMING(node_id, vfront_porch),                                       \
 	};                                                                                         \
-	DEVICE_DT_INST_DEFINE(inst, st7121_init, NULL, NULL, &st7121_config_##inst, POST_KERNEL,  \
-			      CONFIG_ST7121_INIT_PRIORITY, &st7121_api);
+	DEVICE_DT_DEFINE(node_id, st7121_init, NULL, NULL, &st7121_config_##node_id, POST_KERNEL, \
+			 CONFIG_ST7121_INIT_PRIORITY, &st7121_api);
 
-DT_INST_FOREACH_STATUS_OKAY(ST7121_DEFINE)
+#define ST7121_DEFINE_ST7121(node_id) ST7121_DEFINE(node_id, st7121_init_cmds)
+#define ST7121_DEFINE_ST7123(node_id) ST7121_DEFINE(node_id, st7123_init_cmds)
+
+DT_FOREACH_STATUS_OKAY(sitronix_st7121, ST7121_DEFINE_ST7121)
+DT_FOREACH_STATUS_OKAY(sitronix_st7123, ST7121_DEFINE_ST7123)

@@ -2,20 +2,23 @@
 # SPDX-License-Identifier: Apache-2.0
 
 config ST7121
-	bool "Sitronix ST7121 MIPI DSI display driver"
+	bool "Sitronix ST7121 and ST7123 MIPI DSI display driver"
 	default y
-	depends on DT_HAS_SITRONIX_ST7121_ENABLED
+	depends on DT_HAS_SITRONIX_ST7121_ENABLED || DT_HAS_SITRONIX_ST7123_ENABLED
 	select MIPI_DSI
 	select GPIO if $(dt_compat_any_has_prop,$(DT_COMPAT_SITRONIX_ST7121),reset-gpios) || \
-		$(dt_compat_any_has_prop,$(DT_COMPAT_SITRONIX_ST7121),bl-gpios)
+		$(dt_compat_any_has_prop,$(DT_COMPAT_SITRONIX_ST7121),bl-gpios) || \
+		$(dt_compat_any_has_prop,$(DT_COMPAT_SITRONIX_ST7123),reset-gpios) || \
+		$(dt_compat_any_has_prop,$(DT_COMPAT_SITRONIX_ST7123),bl-gpios)
 	help
-	  Enable driver for the Sitronix ST7121 MIPI DSI display controller.
+	  Enable driver for the Sitronix ST7121 and ST7123 MIPI DSI display
+	  controllers.
 
 config ST7121_INIT_PRIORITY
-	int "ST7121 initialization priority"
+	int "ST7121 and ST7123 initialization priority"
 	depends on ST7121
 	default MIPI_DSI_INIT_PRIORITY
 	help
-	  ST7121 display driver initialization priority. The panel attaches
-	  to the MIPI DSI host, so it has to initialize after the host and
-	  after the controller streaming to it.
+	  Display driver initialization priority. The panel attaches to the
+	  MIPI DSI host, so it has to initialize after the host and after the
+	  controller streaming to it.

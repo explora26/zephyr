@@ -1,0 +1,27 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+title: Sitronix ST7123 MIPI DSI display controller
+
+description: |
+  Sitronix ST7123 TFT-LCD driver with integrated touch controller, driving
+  a 720x1280 panel over a two-lane MIPI DSI link in video mode.
+
+  The driver programs the initialization sequence of the 5-inch 720x1280
+  panel used on the M5Stack Tab5.
+
+compatible: "sitronix,st7123"
+
+include: [mipi-dsi-device.yaml, display-controller.yaml]
+
+properties:
+  reset-gpios:
+    type: phandle-array
+    description: |
+      Reset GPIO (active low). Without it the controller is reset with the
+      DCS soft reset command.
+
+  bl-gpios:
+    type: phandle-array
+    description: |
+      Backlight enable GPIO (active high).
