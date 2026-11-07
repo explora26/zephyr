@@ -55,6 +55,8 @@ struct ili98xx_dsi_config {
 	uint16_t width;
 	uint16_t height;
 	uint8_t channel;
+	/** Index of the init-sequence property value, 0 when it is absent */
+	uint8_t init_sequence;
 	int (*regs_init_fn)(const struct device *dev);
 };
 

@@ -257,6 +257,7 @@ static int ili98xx_dsi_init(const struct device *dev)
 		.height = DT_PROP(INST_DT_ILI98XX_DSI(n, t), height),                              \
 		.channel = DT_REG_ADDR(INST_DT_ILI98XX_DSI(n, t)),                                 \
 		.pixel_format = DT_PROP(INST_DT_ILI98XX_DSI(n, t), pixel_format),                  \
+		.init_sequence = DT_ENUM_IDX_OR(INST_DT_ILI98XX_DSI(n, t), init_sequence, 0),      \
 		.regs_init_fn = ili##t##_dsi_regs_init,                                            \
 	};                                                                                         \
                                                                                                    \

@@ -21,3 +21,18 @@ properties:
     description: |
       The BLn pin is asserted to control the backlight of the panel.
       The sensor receives this as an active-high signal.
+
+  init-sequence:
+    type: string
+    default: "rtkapplcdms02001be"
+    enum:
+      - "rtkapplcdms02001be"
+      - "m5stack-tab5"
+    description: |
+      Manufacturer settings written to the controller at initialization.
+      They come from the panel vendor and differ between panels.
+
+      - rtkapplcdms02001be: Rocktech RK055 panel of the Renesas
+        RTKAPPLCDMS02001BE display, driven over four data lanes
+      - m5stack-tab5: 5-inch 720x1280 panel of the M5Stack Tab5 (board
+        revision 1), driven over two data lanes

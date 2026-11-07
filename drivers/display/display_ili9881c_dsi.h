@@ -9,6 +9,10 @@
 
 #include <zephyr/device.h>
 
+/* Indexes of the init-sequence devicetree property values */
+#define ILI9881C_INIT_SEQUENCE_RTKAPPLCDMS02001BE 0
+#define ILI9881C_INIT_SEQUENCE_M5STACK_TAB5       1
+
 /**
  * @brief Run the ILI9881C power-on command sequence.
  *
