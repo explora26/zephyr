@@ -1,0 +1,6 @@
+board:
+  name: m5stack_tab5
+  full_name: Tab5
+  vendor: m5stack
+  socs:
+    - name: esp32p4

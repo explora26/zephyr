@@ -1,0 +1,169 @@
+/*
+ * SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/dts-v1/;
+
+#include <espressif/esp32p4/esp32p4.dtsi>
+#include "m5stack_tab5_hpcore-pinctrl.dtsi"
+#include <zephyr/dt-bindings/input/input-event-codes.h>
+#include <espressif/partitions_0x2000_default_16M.dtsi>
+
+/ {
+	compatible = "espressif,esp32p4";
+	model = "M5Stack Tab5 HP Core";
+
+	chosen {
+		zephyr,sram = &sramhp;
+		zephyr,console = &usb_serial;
+		zephyr,shell-uart = &usb_serial;
+		zephyr,flash = &flash0;
+		zephyr,code-partition = &slot0_partition;
+		zephyr,rtc = &rx8130ce_rtc;
+	};
+
+	aliases {
+		accel0 = &bmi270;
+		rtc = &rx8130ce_rtc;
+		sdhc0 = &sdhc0;
+		sw0 = &boot_button;
+		watchdog0 = &wdt0;
+	};
+
+	gpio_keys {
+		compatible = "gpio-keys";
+
+		boot_button: button {
+			label = "Boot Button";
+			gpios = <&gpio1 3 (GPIO_PULL_UP | GPIO_ACTIVE_LOW)>;
+			zephyr,code = <INPUT_KEY_0>;
+		};
+	};
+};
+
+&flash0 {
+	reg = <0x0 DT_SIZE_M(16)>;
+	ranges = <0x0 0x0 DT_SIZE_M(16)>;
+};
+
+&psram0 {
+	size = <DT_SIZE_M(32)>;
+};
+
+/* Pre-v3 silicon: valid CPU frequencies are 90/180/360 MHz */
+&cpu0 {
+	clock-frequency = <DT_FREQ_M(360)>;
+};
+
+&cpu1 {
+	clock-frequency = <DT_FREQ_M(360)>;
+};
+
+&usb_serial {
+	status = "okay";
+};
+
+/* Internal system bus */
+&i2c0 {
+	clock-frequency = <I2C_BITRATE_FAST>;
+	pinctrl-0 = <&i2c0_default>;
+	pinctrl-names = "default";
+	status = "okay";
+
+	/*
+	 * Pin 1: speaker amplifier enable, pin 4: LCD enable,
+	 * pin 5: touch enable, pin 6: camera enable.
+	 */
+	io_expander0: pi4ioe5v6408@43 {
+		compatible = "diodes,pi4ioe5v6408";
+		reg = <0x43>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <8>;
+	};
+
+	/* Pin 0: ESP32-C6 power enable, pin 3: USB-A 5 V enable. */
+	io_expander1: pi4ioe5v6408@44 {
+		compatible = "diodes,pi4ioe5v6408";
+		reg = <0x44>;
+		gpio-controller;
+		#gpio-cells = <2>;
+		ngpios = <8>;
+	};
+
+	rx8130ce_rtc: rtc@32 {
+		compatible = "epson,rx8130ce-rtc";
+		reg = <0x32>;
+	};
+
+	bmi270: bmi270@68 {
+		compatible = "bosch,bmi270";
+		reg = <0x68>;
+	};
+};
+
+&i2s0 {
+	pinctrl-0 = <&i2s0_default>;
+	pinctrl-names = "default";
+	status = "disabled";
+};
+
+&trng0 {
+	status = "okay";
+};
+
+&coretemp {
+	status = "okay";
+};
+
+&gpio0 {
+	status = "okay";
+};
+
+&gpio1 {
+	status = "okay";
+};
+
+&wdt0 {
+	status = "okay";
+};
+
+&dma {
+	status = "okay";
+};
+
+&dma_axi {
+	status = "okay";
+};
+
+&ldo {
+	status = "okay";
+
+	/* LDO_VO4 supplies the microSD card and its I/O domain. */
+	ldo4@4 {
+		regulator-init-microvolt = <3300000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+};
+
+&sdhc {
+	sdhc0: sdhc@0 {
+		bus-width = <4>;
+		max-bus-freq = <40000000>;
+		clk-pin = <43>;
+		cmd-pin = <44>;
+		d0-pin = <39>;
+		d1-pin = <40>;
+		d2-pin = <41>;
+		d3-pin = <42>;
+		status = "okay";
+
+		mmc {
+			compatible = "zephyr,sdmmc-disk";
+			disk-name = "SD";
+			status = "okay";
+		};
+	};
+};

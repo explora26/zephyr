@@ -1,0 +1,6 @@
+# SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+# SPDX-License-Identifier: Apache-2.0
+
+config BOARD_M5STACK_TAB5
+	select SOC_ESP32P4_HPCORE if BOARD_M5STACK_TAB5_ESP32P4_HPCORE
+	select SOC_ESP32P4_REV_1_3
