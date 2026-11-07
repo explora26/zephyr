@@ -1,0 +1,53 @@
+/*
+ * SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/*
+ * Display hardware shared by all board revisions: a 720x1280 panel on two
+ * MIPI DSI data lanes. The revision overlays add the panel and touch
+ * controllers and the link timings.
+ */
+
+#include <zephyr/dt-bindings/display/panel.h>
+#include <zephyr/dt-bindings/mipi_dsi/mipi_dsi.h>
+
+/ {
+	chosen {
+		zephyr,display = &dsi_display;
+	};
+};
+
+&io_expander0 {
+	lcd-enable-hog {
+		gpio-hog;
+		gpios = <4 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+
+	touch-enable-hog {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-high;
+	};
+};
+
+/* LDO_VO3 supplies the MIPI D-PHY. */
+&ldo {
+	ldo3@3 {
+		regulator-init-microvolt = <2500000>;
+		regulator-boot-on;
+		regulator-always-on;
+	};
+};
+
+&mipi_dsi {
+	data-lanes = <2>;
+	status = "okay";
+};
+
+&dsi_display {
+	width = <720>;
+	height = <1280>;
+	status = "okay";
+};

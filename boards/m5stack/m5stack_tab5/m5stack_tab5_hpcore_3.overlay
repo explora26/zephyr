@@ -5,27 +5,11 @@
 
 /* Board revision 3: Sitronix ST7121 display with integrated touch controller */
 
-#include <zephyr/dt-bindings/display/panel.h>
-#include <zephyr/dt-bindings/mipi_dsi/mipi_dsi.h>
+#include "m5stack_tab5_display.dtsi"
 
 / {
 	chosen {
-		zephyr,display = &dsi_display;
 		zephyr,touch = &st7123_touch;
-	};
-};
-
-&io_expander0 {
-	lcd-enable-hog {
-		gpio-hog;
-		gpios = <4 GPIO_ACTIVE_HIGH>;
-		output-high;
-	};
-
-	touch-enable-hog {
-		gpio-hog;
-		gpios = <5 GPIO_ACTIVE_HIGH>;
-		output-high;
 	};
 };
 
@@ -39,20 +23,9 @@
 	};
 };
 
-/* LDO_VO3 supplies the MIPI D-PHY. */
-&ldo {
-	ldo3@3 {
-		regulator-init-microvolt = <2500000>;
-		regulator-boot-on;
-		regulator-always-on;
-	};
-};
-
 &mipi_dsi {
-	data-lanes = <2>;
 	phy-clock = <965000000>;
 	dpi-clock-frequency = <70000000>;
-	status = "okay";
 
 	st7121: panel-controller@0 {
 		compatible = "sitronix,st7121";
@@ -81,7 +54,4 @@
 
 &dsi_display {
 	pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
-	width = <720>;
-	height = <1280>;
-	status = "okay";
 };

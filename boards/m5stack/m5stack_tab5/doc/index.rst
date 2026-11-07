@@ -41,7 +41,7 @@ Board Revisions
 ===============
 
 M5Stack has shipped the Tab5 with three display assemblies. They are described as board
-revisions:
+revisions, each of which enables its display and touch controller:
 
 .. list-table::
    :header-rows: 1
@@ -49,27 +49,35 @@ revisions:
    * - Revision
      - Display controller
      - Touch controller
-     - Zephyr support
+     - Pixel format
+     - Lane rate
    * - ``1``
      - Ilitek ILI9881C
-     - Goodix GT911 (I2C 0x14)
-     - Display and touch not enabled
+     - Goodix GT911 (I2C 0x14), polled
+     - RGB888
+     - 1000 Mbit/s
    * - ``2``
      - Sitronix ST7123
      - Integrated in ST7123 (I2C 0x55)
-     - Display and touch not enabled
+     - RGB565
+     - 1000 Mbit/s
    * - ``3`` (default)
      - Sitronix ST7121
      - Integrated in ST7121 (I2C 0x55)
-     - Display and touch
+     - RGB565
+     - 965 Mbit/s
 
 Select the revision with the board target, for example ``m5stack_tab5@1/esp32p4/hpcore``.
-The ESP-IDF board support package reports the revision at boot as ``board version``.
+The ESP-IDF board support package reports the revision at boot as ``board version``. It
+can also be read on the internal I2C bus: a GT911 at 0x14 means revision 1, otherwise the
+touch controller at 0x55 reports firmware version 3 in register 0x0000 on revision 2 and
+1 on revision 3.
 
-On revision 3 the display runs in RGB565 over two data lanes at 965 Mbit/s per lane, with
-the backlight on GPIO22 and the touch interrupt on GPIO23. The panel and touch supplies
-are switched on by I/O expander 0x43 pins 4 and 5, and LDO_VO3 supplies the MIPI D-PHY
-at 2.5 V.
+On all revisions the display uses two MIPI DSI data lanes, the backlight is on GPIO22 and
+the touch interrupt on GPIO23. The panel and touch supplies are switched on by I/O
+expander 0x43 pins 4 and 5, and LDO_VO3 supplies the MIPI D-PHY at 2.5 V. Revision 1
+drives the touch interrupt line low and polls the GT911, as its pull-up otherwise keeps
+the controller from working.
 
 .. include:: ../../../espressif/common/soc-esp32p4-features.rst
    :start-after: espressif-soc-esp32p4-features

@@ -1,0 +1,74 @@
+/*
+ * SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Board revision 1: Ilitek ILI9881C display and Goodix GT911 touch controller */
+
+#include "m5stack_tab5_display.dtsi"
+
+/ {
+	chosen {
+		zephyr,touch = &gt911;
+	};
+};
+
+/*
+ * A pull-up on the touch interrupt line keeps the GT911 from working, so the
+ * line is driven low and the controller is polled.
+ */
+&gpio0 {
+	touch-int-hog {
+		gpio-hog;
+		gpios = <23 GPIO_ACTIVE_HIGH>;
+		output-low;
+	};
+};
+
+&i2c0 {
+	gt911: touch-controller@14 {
+		compatible = "goodix,gt911";
+		reg = <0x14>;
+		alt-addr = <0x5d>;
+		screen-width = <720>;
+		screen-height = <1280>;
+	};
+};
+
+&mipi_dsi {
+	phy-clock = <1000000000>;
+	dpi-clock-frequency = <60000000>;
+
+	ili9881c: panel-controller@0 {
+		compatible = "ilitek,ili9881c";
+		reg = <0>;
+		init-sequence = "m5stack-tab5";
+		data-lanes = <2>;
+		pixel-format = <MIPI_DSI_PIXFMT_RGB888>;
+		width = <720>;
+		height = <1280>;
+		bl-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+
+		/*
+		 * The ILI9881C driver takes the back porches as including the
+		 * sync pulses: 140 + 40 horizontally and 20 + 4 vertically.
+		 */
+		display-timings {
+			compatible = "zephyr,panel-timing";
+			hsync-len = <40>;
+			hback-porch = <180>;
+			hfront-porch = <40>;
+			vsync-len = <4>;
+			vback-porch = <24>;
+			vfront-porch = <20>;
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <1>;
+			pixelclk-active = <0>;
+		};
+	};
+};
+
+&dsi_display {
+	pixel-format = <PANEL_PIXEL_FORMAT_RGB_888>;
+};

@@ -16,8 +16,8 @@ configdefault GPIO_HOGS
 configdefault GPIO_HOGS_INIT_PRIORITY
 	default 71
 
-# Two 720x1280 RGB565 framebuffers take 3.5 MiB of PSRAM.
+# Two 720x1280 framebuffers take up to 5.3 MiB of PSRAM (RGB888).
 configdefault ESP_SPIRAM_HEAP_SIZE
-	default 5242880 if DISPLAY_ESP32_DSI
+	default 6291456 if DISPLAY_ESP32_DSI
 
 endif # BOARD_M5STACK_TAB5_ESP32P4_HPCORE

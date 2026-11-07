@@ -1,0 +1,57 @@
+/*
+ * SPDX-FileCopyrightText: Copyright The Zephyr Project Contributors
+ * SPDX-License-Identifier: Apache-2.0
+ */
+
+/* Board revision 2: Sitronix ST7123 display with integrated touch controller */
+
+#include "m5stack_tab5_display.dtsi"
+
+/ {
+	chosen {
+		zephyr,touch = &st7123_touch;
+	};
+};
+
+&i2c0 {
+	st7123_touch: touch-controller@55 {
+		compatible = "sitronix,st7123-touch";
+		reg = <0x55>;
+		int-gpios = <&gpio0 23 GPIO_ACTIVE_LOW>;
+		screen-width = <720>;
+		screen-height = <1280>;
+	};
+};
+
+&mipi_dsi {
+	phy-clock = <1000000000>;
+	dpi-clock-frequency = <70000000>;
+
+	st7123: panel-controller@0 {
+		compatible = "sitronix,st7123";
+		reg = <0>;
+		data-lanes = <2>;
+		pixel-format = <MIPI_DSI_PIXFMT_RGB565>;
+		width = <720>;
+		height = <1280>;
+		bl-gpios = <&gpio0 22 GPIO_ACTIVE_HIGH>;
+
+		display-timings {
+			compatible = "zephyr,panel-timing";
+			hsync-len = <2>;
+			hback-porch = <40>;
+			hfront-porch = <40>;
+			vsync-len = <2>;
+			vback-porch = <8>;
+			vfront-porch = <220>;
+			hsync-active = <0>;
+			vsync-active = <0>;
+			de-active = <1>;
+			pixelclk-active = <0>;
+		};
+	};
+};
+
+&dsi_display {
+	pixel-format = <PANEL_PIXEL_FORMAT_RGB_565>;
+};
